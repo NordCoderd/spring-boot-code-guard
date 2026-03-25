@@ -1,0 +1,4 @@
+build:
+  excludes:
+    # Exclude test fixture violation files from detekt checks
+    - '**/fixtures/violations/**'

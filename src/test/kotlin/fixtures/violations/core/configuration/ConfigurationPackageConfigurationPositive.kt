@@ -1,0 +1,6 @@
+package fixtures.violations.core.configuration.configuration
+
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+class ConfigurationInConfigurationPackage
