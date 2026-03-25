@@ -3,7 +3,7 @@ plugins {
     `java-library`
     id("org.jetbrains.kotlinx.kover") version "0.9.7"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
-    id("com.vanniktech.maven.publish") version "0.31.0"
+    id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
 group = "dev.protsenko"
@@ -44,9 +44,6 @@ kover {
 }
 
 mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
-    signAllPublications()
-
     coordinates("dev.protsenko", "spring-boot-code-guard", "1.0.0")
 
     pom {
@@ -70,6 +67,17 @@ mavenPublishing {
             url = "https://github.com/NordCoderd/spring-boot-code-guard"
             connection = "scm:git:git://github.com/NordCoderd/spring-boot-code-guard.git"
             developerConnection = "scm:git:ssh://git@github.com/NordCoderd/spring-boot-code-guard.git"
+        }
+    }
+}
+
+// Workaround: Gradle auto-injects mavenCentralUsername/mavenCentralPassword credentials into
+// any repository named "mavenCentral", including the local file:// staging directory created by
+// the vanniktech plugin. Gradle rejects authentication on file:// URLs, so we clear it first.
+tasks.withType<PublishToMavenRepository>().configureEach {
+    doFirst {
+        if (repository.url.scheme == "file") {
+            repository.authentication.clear()
         }
     }
 }
