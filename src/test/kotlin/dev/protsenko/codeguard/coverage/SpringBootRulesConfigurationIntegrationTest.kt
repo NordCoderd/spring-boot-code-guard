@@ -7,6 +7,7 @@ import dev.protsenko.codeguard.core.SpringBootRulesConfiguration
 import dev.protsenko.codeguard.core.springBootRules
 import org.junit.jupiter.api.Test
 import java.io.File
+import kotlin.test.assertFailsWith
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -101,6 +102,35 @@ class SpringBootRulesConfigurationIntegrationTest {
             scope = Konsist.scopeFromFiles(emptyList())
             configureAllRules()
         }.verify()
+    }
+
+    @Test
+    fun `verify() reports all violations from all failing rules in a single error`() {
+        val error =
+            assertFailsWith<AssertionError> {
+                springBootRules {
+                    scope =
+                        Konsist.scopeFromFiles(
+                            listOf(
+                                "src/test/kotlin/fixtures/violations/core/dependencyinjection/NoFieldInjectionNegative.kt",
+                                "src/test/kotlin/fixtures/violations/core/configuration/StatelessConfigurationNegative.kt",
+                            ),
+                        )
+                    general {
+                        noFieldInjection()
+                        statelessConfiguration()
+                    }
+                }.verify()
+            }
+
+        assertTrue(
+            error.message!!.contains("@Autowired") || error.message!!.contains("field"),
+            "Expected field injection violation in message",
+        )
+        assertTrue(
+            error.message!!.contains("mutable") || error.message!!.contains("StatefulConfiguration"),
+            "Expected stateless configuration violation in message",
+        )
     }
 
     // ========== verifyWithResults() ==========

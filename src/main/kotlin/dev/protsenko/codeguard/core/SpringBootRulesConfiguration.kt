@@ -23,7 +23,7 @@ class SpringBootRulesConfiguration {
     /**
      * The scope to apply rules against. Defaults to the entire project.
      */
-    var scope: KoScope = Konsist.scopeFromProject()
+    var scope: KoScope = Konsist.scopeFromProduction()
 
     /**
      * Configure Spring Core rules (DI, components, configuration).
@@ -72,10 +72,20 @@ class SpringBootRulesConfiguration {
 
     /**
      * Verify all configured rules against the scope.
+     * Runs every rule and collects all violations before throwing,
+     * so the full list of problems is reported in a single error.
      */
     fun verify() {
-        allRules.forEach { rule ->
-            rule.verify(scope)
+        val failures = allRules.mapNotNull { rule ->
+            try {
+                rule.verify(scope)
+                null
+            } catch (e: AssertionError) {
+                e.message
+            }
+        }
+        if (failures.isNotEmpty()) {
+            throw AssertionError(failures.joinToString("\n\n"))
         }
     }
 

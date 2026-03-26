@@ -11,8 +11,8 @@ import kotlin.test.assertTrue
  * Demonstrates common usage patterns for Spring Code Guard.
  * These examples are referenced in the README Usage section.
  *
- * In a real Spring Boot project, replace scopeFromFiles(...) with
- * Konsist.scopeFromProject() (the default) or scopeFromModule("module-name").
+ * In a real Spring Boot project, remove the scope override — the default
+ * is Konsist.scopeFromProduction() which scans only main (non-test) source files.
  */
 class UsageExampleTest {
 
@@ -34,7 +34,7 @@ class UsageExampleTest {
 
     @Test
     fun `example - minimal setup enforcing no field injection`() {
-        // In your project: remove the scope line; scopeFromProject() is the default
+        // In your project: remove the scope line; scopeFromProduction() is the default
         springBootRules {
             scope = Konsist.scopeFromFiles(
                 listOf("src/test/kotlin/fixtures/violations/core/dependencyinjection/NoFieldInjectionPositive.kt"),
