@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "dev.protsenko"
-version = "1.0-SNAPSHOT"
+version = "1.0.1"
 
 repositories {
     mavenCentral()
@@ -44,7 +44,7 @@ kover {
 }
 
 mavenPublishing {
-    coordinates("dev.protsenko", "spring-boot-code-guard", "1.0.0")
+    coordinates("dev.protsenko", "spring-boot-code-guard", "1.0.1")
 
     pom {
         name = "Spring Boot Code Guard"
