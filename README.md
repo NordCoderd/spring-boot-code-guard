@@ -6,7 +6,13 @@ Each rule is a static analysis check that runs as a regular JUnit 5 test. Rules 
 
 ## Installation
 
-There will be installation instructions here.
+Maven Central: https://central.sonatype.com/artifact/dev.protsenko/spring-boot-code-guard/overview
+
+Add dependency to your `build.gradle.kts` or `build.gradle`:
+
+```kotlin
+implementation("dev.protsenko:spring-boot-code-guard:1.0.4")
+```
 
 ## Usage
 
