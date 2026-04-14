@@ -1,4 +1,4 @@
-# Spring Code Guard
+# Spring Boot Code Guard
 
 Set of Spring Boot Best Practices converted into Konsist tests. Helps you write clean and maintainable code and prevent AI slop (at least trying) in your codebase.
 
