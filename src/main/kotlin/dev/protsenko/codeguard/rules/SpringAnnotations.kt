@@ -1,5 +1,8 @@
 package dev.protsenko.codeguard.rules
 
+import com.lemonappdev.konsist.api.declaration.combined.KoClassAndInterfaceDeclaration
+import com.lemonappdev.konsist.api.provider.KoFullyQualifiedNameProvider
+
 /**
  * Fully-qualified annotation names and composite groups shared across all rule implementations.
  */
@@ -36,6 +39,12 @@ object SpringAnnotations {
     // ---- JPA ----
     const val ENTITY_JAKARTA = "jakarta.persistence.Entity"
     const val ENTITY_JAVAX = "javax.persistence.Entity"
+    const val MAPPED_SUPERCLASS_JAKARTA = "jakarta.persistence.MappedSuperclass"
+    const val MAPPED_SUPERCLASS_JAVAX = "javax.persistence.MappedSuperclass"
+    const val EMBEDDABLE_JAKARTA = "jakarta.persistence.Embeddable"
+    const val EMBEDDABLE_JAVAX = "javax.persistence.Embeddable"
+    const val ID_CLASS_JAKARTA = "jakarta.persistence.IdClass"
+    const val ID_CLASS_JAVAX = "javax.persistence.IdClass"
     const val ID_JAKARTA = "jakarta.persistence.Id"
     const val ID_JAVAX = "javax.persistence.Id"
 
@@ -64,8 +73,25 @@ object SpringAnnotations {
     /** @Entity (jakarta + javax). */
     val entityAnnotations = listOf(ENTITY_JAKARTA, ENTITY_JAVAX)
 
+    /** JPA types allowed in entity/domain packages. */
+    val entityPackageAnnotations =
+        listOf(
+            ENTITY_JAKARTA,
+            ENTITY_JAVAX,
+            MAPPED_SUPERCLASS_JAKARTA,
+            MAPPED_SUPERCLASS_JAVAX,
+            EMBEDDABLE_JAKARTA,
+            EMBEDDABLE_JAVAX,
+        )
+
     /** @Id (jakarta + javax). */
     val idAnnotations = listOf(ID_JAKARTA, ID_JAVAX)
+
+    /** @IdClass (jakarta + javax). */
+    val idClassAnnotations = listOf(ID_CLASS_JAKARTA, ID_CLASS_JAVAX)
+
+    /** Types allowed in config/configuration packages. */
+    val configurationPackageAnnotations = listOf(CONFIGURATION, CONTROLLER_ADVICE, REST_CONTROLLER_ADVICE)
 
     /** All @Transactional variants. */
     val transactionalAnnotations = listOf(TRANSACTIONAL, TRANSACTIONAL_JAKARTA, TRANSACTIONAL_JAVAX)
@@ -96,8 +122,19 @@ object SpringAnnotations {
     /** Annotations that rely on Spring AOP proxy and are silently ignored on private methods. */
     val proxyAnnotations =
         listOf(
-            TRANSACTIONAL, TRANSACTIONAL_JAKARTA, TRANSACTIONAL_JAVAX,
-            CACHEABLE, CACHE_EVICT, CACHE_PUT,
+            TRANSACTIONAL,
+            TRANSACTIONAL_JAKARTA,
+            TRANSACTIONAL_JAVAX,
+            CACHEABLE,
+            CACHE_EVICT,
+            CACHE_PUT,
             ASYNC,
         )
 }
+
+fun KoClassAndInterfaceDeclaration.isSpringDataRepository(): Boolean =
+    hasAnnotationWithName(SpringAnnotations.REPOSITORY) ||
+        hasExternalParent { parent ->
+            val fqn = (parent.sourceDeclaration as? KoFullyQualifiedNameProvider)?.fullyQualifiedName
+            fqn != null && fqn.startsWith("org.springframework.data") && fqn.contains(".repository.")
+        }

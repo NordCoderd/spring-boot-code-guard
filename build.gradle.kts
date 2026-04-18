@@ -1,5 +1,6 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.SourcesJar
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "2.3.0"
@@ -10,7 +11,7 @@ plugins {
 }
 
 group = "dev.protsenko"
-version = "1.0.5"
+version = "1.0.7"
 
 repositories {
     mavenCentral()
@@ -37,6 +38,13 @@ tasks.test {
 detekt {
     config.setFrom(files("detekt.yml"))
 }
+
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
+}
+
 
 kover {
     reports {

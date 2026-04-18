@@ -45,3 +45,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+.grepai/
+.claude
+konsist-sources/

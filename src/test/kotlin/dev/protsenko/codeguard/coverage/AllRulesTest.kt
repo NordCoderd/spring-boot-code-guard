@@ -66,6 +66,13 @@ class AllRulesTest {
                     configurationPropertiesInPropertiesPackage()
                     configurationPropertiesPrefixKebabCase()
                     entitiesInEntityPackage()
+                    onlyServicesInServicePackage()
+                    onlyEntitiesInEntityPackage()
+                    onlyControllersInControllerPackage()
+                    onlyConfigurationsInConfigPackage()
+                    onlyPropertiesInPropertyPackage()
+                    repositoryInRepositoryPackage()
+                    onlyRepositoriesInRepositoryPackage()
                 }
                 web {
                     restControllerReturnTypes()
@@ -104,8 +111,8 @@ class AllRulesTest {
     }
 
     @Test
-    fun `allPackageRules contains 7 rules`() {
-        assertEquals(7, allPackageRules.size)
+    fun `allPackageRules contains 14 rules`() {
+        assertEquals(14, allPackageRules.size)
     }
 
     @Test
