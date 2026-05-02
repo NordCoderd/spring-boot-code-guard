@@ -120,6 +120,31 @@ class DependencyInjectionAndCoreRulesViolationTest {
     }
 
     @Test
+    fun `repositoryNamingRule detects Spring Data JpaRepository interface without @Repository and bad name`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/core/springcore/naming/JpaRepositoryNamingNegative.kt"),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                NamingRules.repositoryNamingRule.verify(negativeScope)
+            }
+        assertEquals(
+            "Repository interfaces should end with 'Repository': BadJpaRepo",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `repositoryNamingRule passes for Spring Data JpaRepository interface without @Repository and correct name`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/core/springcore/naming/JpaRepositoryNamingPositive.kt"),
+            )
+        NamingRules.repositoryNamingRule.verify(positiveScope)
+    }
+
+    @Test
     fun `servicePackageRule detects Service not in service package`() {
         val negativeScope =
             Konsist.scopeFromFiles(
@@ -286,7 +311,7 @@ class DependencyInjectionAndCoreRulesViolationTest {
                 PackageRules.propertiesValidationRule.verify(negativeScope)
             }
         assertEquals(
-            "@ConfigurationProperties classes should be in .properties package: AppProperties (fixtures.violations.core.wrongpackage)",
+            "@ConfigurationProperties classes should be in .property package: AppProperties (fixtures.violations.core.wrongpackage)",
             error.message,
         )
     }

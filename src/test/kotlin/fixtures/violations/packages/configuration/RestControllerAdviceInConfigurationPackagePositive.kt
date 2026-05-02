@@ -1,0 +1,6 @@
+package fixtures.violations.packages.configuration
+
+import org.springframework.web.bind.annotation.RestControllerAdvice
+
+@RestControllerAdvice
+class RestControllerAdviceInConfigurationPackagePositive

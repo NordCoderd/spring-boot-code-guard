@@ -83,6 +83,13 @@ class UsageExampleTest {
                 configurationPropertiesInPropertiesPackage()
                 configurationPropertiesPrefixKebabCase()
                 entitiesInEntityPackage()
+                onlyServicesInServicePackage()
+                onlyEntitiesInEntityPackage()
+                onlyControllersInControllerPackage()
+                onlyConfigurationsInConfigPackage()
+                onlyPropertiesInPropertyPackage()
+                repositoryInRepositoryPackage()
+                onlyRepositoriesInRepositoryPackage()
             }
             web {
                 properHttpMethodAnnotations()
@@ -196,6 +203,13 @@ class UsageExampleTest {
                 serviceInServicePackage()
                 controllerInControllerPackage()
                 entitiesInEntityPackage()
+                onlyServicesInServicePackage()
+                onlyEntitiesInEntityPackage()
+                onlyControllersInControllerPackage()
+                onlyConfigurationsInConfigPackage()
+                onlyPropertiesInPropertyPackage()
+                repositoryInRepositoryPackage()
+                onlyRepositoriesInRepositoryPackage()
             }
         }.verify()
     }

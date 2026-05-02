@@ -11,7 +11,7 @@ Maven Central: https://central.sonatype.com/artifact/dev.protsenko/spring-boot-c
 Add dependency to your `build.gradle.kts` or `build.gradle`:
 
 ```kotlin
-implementation("dev.protsenko:spring-boot-code-guard:1.0.4")
+implementation("dev.protsenko:spring-boot-code-guard:1.0.7")
 ```
 
 ## Usage
@@ -150,6 +150,13 @@ Passing an unknown key throws an error listing all registered rule keys. Excludi
 - `CodeGuard:propertiesValidation`: `@ConfigurationProperties` classes must reside in a `..property..` package segment.
 - `CodeGuard:configurationPropertiesPrefixKebabCase`: `@ConfigurationProperties` prefixes must use lowercase kebab-case segments separated by dots, such as `app.mail` or `app-mail.client`.
 - `CodeGuard:entityPackage`: `@Entity` classes must reside in a `..domain..` or `..entity..` package segment.
+- `CodeGuard:onlyServicesInServicePackage`: Only `@Service` classes may reside in a `..service..` package segment — other stereotypes (`@Component`, `@Repository`, etc.) and plain classes must not be placed there. Exception: non-`@Service` classes declared in the same file as a `@Service` class are treated as file-level helpers and are permitted; nested helper classes are ignored.
+- `CodeGuard:onlyEntitiesInEntityPackage`: Only `@Entity` classes may reside in `..domain..` or `..entity..` package segments — non-entity stereotypes and plain classes must not be placed there. Exception: JPA `@MappedSuperclass` and `@Embeddable` types are also permitted, classes referenced from an entity's `@IdClass` are permitted, and non-`@Entity` classes declared in the same file as an `@Entity` class or a class inheriting from `@Entity` are treated as file-level helpers and are permitted.
+- `CodeGuard:onlyControllersInControllerPackage`: Only `@Controller`/`@RestController` classes may reside in `..controller..` or `..web..` package segments — other stereotypes and plain classes must not be placed there. Exception: non-controller classes declared in the same file as a controller are treated as file-level helpers and are permitted.
+- `CodeGuard:onlyConfigurationsInConfigPackage`: Only `@Configuration`, `@ControllerAdvice`, and `@RestControllerAdvice` classes may reside in `..config..` or `..configuration..` package segments — other stereotypes and plain classes must not be placed there. Exception: other classes declared in the same file as one of these allowed types are treated as file-level helpers and are permitted.
+- `CodeGuard:onlyPropertiesInPropertyPackage`: Only `@ConfigurationProperties` classes may reside in `..property..` package segments — other stereotypes and plain classes must not be placed there. Exception: non-`@ConfigurationProperties` classes declared in the same file as a `@ConfigurationProperties` class are treated as file-level helpers and are permitted.
+- `CodeGuard:repositoryPackage`: `@Repository` classes and Spring Data repository interfaces (e.g. extending `JpaRepository`) must reside in a `..repository..` package segment.
+- `CodeGuard:onlyRepositoriesInRepositoryPackage`: Only `@Repository` classes may reside in `..repository..` package segments — other stereotypes and plain classes must not be placed there. Exception: non-`@Repository` classes declared in the same file as a `@Repository` class are treated as file-level helpers and are permitted.
 
 ### Web
 

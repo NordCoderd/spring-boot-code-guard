@@ -6,6 +6,7 @@ import dev.protsenko.codeguard.core.SpringBootRule
 import dev.protsenko.codeguard.core.notSuppressedClasses
 import dev.protsenko.codeguard.core.notSuppressedClassesAndInterfaces
 import dev.protsenko.codeguard.rules.SpringAnnotations
+import dev.protsenko.codeguard.rules.isSpringDataRepository
 
 /**
  * Rules for naming conventions across Spring Boot layers.
@@ -46,7 +47,7 @@ object NamingRules {
             override fun verify(scope: KoScope) {
                 scope
                     .notSuppressedClassesAndInterfaces(suppressKey)
-                    .withAnnotationNamed(SpringAnnotations.REPOSITORY)
+                    .filter { it.isSpringDataRepository() }
                     .filterNot { it.name.endsWith("Repository") }
                     .also { violations ->
                         if (violations.isNotEmpty()) {
