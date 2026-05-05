@@ -1,6 +1,7 @@
 package dev.protsenko.codeguard.rules.packages
 
 import com.lemonappdev.konsist.api.container.KoScope
+import com.lemonappdev.konsist.api.declaration.KoAnnotationDeclaration
 import com.lemonappdev.konsist.api.ext.list.withAnnotationNamed
 import com.lemonappdev.konsist.api.ext.list.withoutAnnotationNamed
 import dev.protsenko.codeguard.core.SpringBootRule
@@ -13,16 +14,42 @@ import dev.protsenko.codeguard.rules.isSpringDataRepository
  * Rules for package structure and naming conventions.
  */
 object PackageRules {
-    private val configurationPropertiesPrefixRegex =
-        Regex("""ConfigurationProperties\s*\(\s*(?:prefix\s*=\s*)?"([^"]+)"""")
     private val kebabCasePrefixRegex =
         Regex("""^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$""")
+    private val constReferenceRegex = Regex("""\$\{?([A-Za-z_][A-Za-z0-9_]*)}?""")
 
-    private fun configurationPropertiesPrefix(annotationText: String): String? =
-        configurationPropertiesPrefixRegex
-            .find(annotationText)
-            ?.groupValues
-            ?.getOrNull(1)
+    private fun configurationPropertiesPrefix(
+        annotation: KoAnnotationDeclaration,
+        stringConstants: Map<String, String>,
+    ): String? =
+        annotation.arguments
+            .firstOrNull { it.name.isEmpty() || it.name == "prefix" }
+            ?.value
+            ?.let { resolveConstReferences(it, stringConstants) }
+
+    private fun stringConstants(scope: KoScope): Map<String, String> =
+        scope
+            .properties(includeNested = false)
+            .filter { it.hasConstModifier }
+            .mapNotNull { property ->
+                property.value?.let { property.name to it }
+            }.toMap()
+
+    private fun resolveConstReferences(
+        value: String,
+        stringConstants: Map<String, String>,
+    ): String? {
+        var resolved = true
+        val prefix =
+            constReferenceRegex.replace(value) { match ->
+                stringConstants[match.groupValues[1]] ?: run {
+                    resolved = false
+                    match.value
+                }
+            }
+
+        return prefix.takeIf { resolved }
+    }
 
     private fun idClassReference(argumentValue: String?): String? =
         argumentValue
@@ -196,6 +223,8 @@ object PackageRules {
             override val suppressKey = "CodeGuard:configurationPropertiesPrefixKebabCase"
 
             override fun verify(scope: KoScope) {
+                val stringConstants = stringConstants(scope)
+
                 scope
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.configurationPropertiesAnnotations)
@@ -203,13 +232,13 @@ object PackageRules {
                         val prefix =
                             klass.annotations
                                 .firstNotNullOfOrNull { annotation ->
-                                    configurationPropertiesPrefix(annotation.text)
+                                    configurationPropertiesPrefix(annotation, stringConstants)
                                 } ?: return@forEach
 
                         if (!kebabCasePrefixRegex.matches(prefix)) {
                             throw AssertionError(
                                 "@ConfigurationProperties prefix should use lowercase kebab-case segments: " +
-                                    "${klass.name} has prefix '$prefix'",
+                                        "${klass.name} has prefix '$prefix'",
                             )
                         }
                     }
@@ -403,7 +432,7 @@ object PackageRules {
                         .filterValues { classesInFile ->
                             classesInFile.none {
                                 it.hasAnnotationWithName(SpringAnnotations.CONTROLLER) ||
-                                    it.hasAnnotationWithName(SpringAnnotations.REST_CONTROLLER)
+                                        it.hasAnnotationWithName(SpringAnnotations.REST_CONTROLLER)
                             }
                         }.values
                         .flatten()
@@ -443,7 +472,7 @@ object PackageRules {
                             klass.annotations
                                 .filter { annotation ->
                                     annotation.fullyQualifiedName in SpringAnnotations.idClassAnnotations ||
-                                        annotation.name == "IdClass"
+                                            annotation.name == "IdClass"
                                 }.flatMap { annotation ->
                                     annotation.arguments
                                         .mapNotNull { argument ->
@@ -465,13 +494,13 @@ object PackageRules {
                                     SpringAnnotations.entityAnnotations.any { annotationName ->
                                         klass.hasAnnotationWithName(annotationName)
                                     } ||
-                                        klass.hasParentClass(indirectParents = true) { parent ->
-                                            SpringAnnotations.entityAnnotations.any { annotationName ->
-                                                parent.sourceDeclaration
-                                                    ?.asClassDeclaration()
-                                                    ?.hasAnnotationWithName(annotationName) == true
+                                            klass.hasParentClass(indirectParents = true) { parent ->
+                                                SpringAnnotations.entityAnnotations.any { annotationName ->
+                                                    parent.sourceDeclaration
+                                                        ?.asClassDeclaration()
+                                                        ?.hasAnnotationWithName(annotationName) == true
+                                                }
                                             }
-                                        }
                                 }
 
                             classesInFile.filterNot { klass ->
@@ -491,9 +520,9 @@ object PackageRules {
                                 SpringAnnotations.entityPackageAnnotations.any { annotationName ->
                                     klass.hasAnnotationWithName(annotationName)
                                 } ||
-                                    inheritsFromEntity ||
-                                    isReferencedIdClass ||
-                                    hasEntityAnchorInFile
+                                        inheritsFromEntity ||
+                                        isReferencedIdClass ||
+                                        hasEntityAnchorInFile
                             }
                         }
 

@@ -348,7 +348,7 @@ class DependencyInjectionAndCoreRulesViolationTest {
             }
         assertEquals(
             "@ConfigurationProperties prefix should use lowercase kebab-case segments: " +
-                "AppProperties has prefix 'appMail'",
+                    "AppProperties has prefix 'appMail'",
             error.message,
         )
     }
@@ -373,6 +373,58 @@ class DependencyInjectionAndCoreRulesViolationTest {
                 ),
             )
         PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule passes for const val string template prefix`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseConstTemplatePositive.kt",
+                ),
+            )
+        PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule passes for const val only string template prefix`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseConstOnlyTemplatePositive.kt",
+                ),
+            )
+        PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule skips unresolved string template prefix`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseUnresolvedConstTemplatePositive.kt",
+                ),
+            )
+        PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule detects resolved const val string template prefix with uppercase segment`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseConstTemplateNegative.kt",
+                ),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(negativeScope)
+            }
+        assertEquals(
+            "@ConfigurationProperties prefix should use lowercase kebab-case segments: " +
+                    "UppercaseFooProperties has prefix 'MYAPP.foo'",
+            error.message,
+        )
     }
 
     @Test

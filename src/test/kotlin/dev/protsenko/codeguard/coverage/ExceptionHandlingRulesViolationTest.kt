@@ -47,7 +47,7 @@ class ExceptionHandlingRulesViolationTest {
                 customExceptionStructureRule.verify(negativeScope)
             }
         assertEquals(
-            "Custom exception classes should extend RuntimeException or proper Spring exceptions: InvalidException extends Throwable, BadCustomException extends Any",
+            "Custom exception classes should extend RuntimeException or proper Spring exceptions: InvalidException extends [Throwable], BadCustomException extends [Any]",
             error.message,
         )
     }
@@ -62,6 +62,40 @@ class ExceptionHandlingRulesViolationTest {
     }
 
     @Test
+    fun `customExceptionStructureRule passes for exception extending runtime exception through custom parent`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/exception/security/CustomExceptionStructureSecurityParentPositive.kt"),
+            )
+        customExceptionStructureRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `customExceptionStructureRule uses declared supertype instead of constructor parameter type`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/exception/CustomExceptionStructureConstructorParameterPositive.kt"),
+            )
+        customExceptionStructureRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `customExceptionStructureRule detects checked exception parent named exception`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/exception/CustomExceptionCheckedNamedExceptionNegative.kt"),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                customExceptionStructureRule.verify(negativeScope)
+            }
+        assertEquals(
+            "Custom exception classes should extend RuntimeException or proper Spring exceptions: ImportException extends [IOException]",
+            error.message,
+        )
+    }
+
+    @Test
     fun `customExceptionStructureRule detects checked exception inheritance`() {
         val negativeScope =
             Konsist.scopeFromFiles(
@@ -72,7 +106,7 @@ class ExceptionHandlingRulesViolationTest {
                 customExceptionStructureRule.verify(negativeScope)
             }
         assertEquals(
-            "Custom exception classes should extend RuntimeException or proper Spring exceptions: CheckedBusinessException extends Exception",
+            "Custom exception classes should extend RuntimeException or proper Spring exceptions: CheckedBusinessException extends [Exception]",
             error.message,
         )
     }

@@ -47,7 +47,7 @@ object CoreRules {
                             val propNames = mutableProperties.joinToString(", ") { it.name }
                             throw AssertionError(
                                 "${klass.name} has mutable properties: $propNames. " +
-                                    "@Configuration classes should be stateless.",
+                                        "@Configuration classes should be stateless.",
                             )
                         }
                     }
@@ -80,7 +80,7 @@ object CoreRules {
                         if (!isInConfigClass) {
                             val message =
                                 "@Bean method ${function.name} in $containingClassName " +
-                                    "should be in a @Configuration class"
+                                        "should be in a @Configuration class"
                             throw AssertionError(message)
                         }
                     }
@@ -105,39 +105,24 @@ object CoreRules {
                         "NestedRuntimeException",
                     )
 
-                scope
-                    .notSuppressedClasses(suppressKey)
-                    .filter { it.name.endsWith("Exception") }
-                    .filterNot { klass ->
-                        val parentNameFromModel = klass.parentClass?.name
-                        val parentNameFromText =
-                            Regex(""":\s*([A-Za-z0-9_.]+)""")
-                                .find(klass.text)
-                                ?.groupValues
-                                ?.getOrNull(1)
-                                ?.substringAfterLast('.')
-                        val parentName = parentNameFromModel ?: parentNameFromText ?: "Any"
-
-                        validExceptionBases.contains(parentName) ||
-                            (parentName.endsWith("Exception") && parentName != "Exception")
-                    }.also { violations ->
-                        if (violations.isNotEmpty()) {
-                            val violatingClasses =
-                                violations.joinToString(", ") {
-                                    val parentNameFromModel = it.parentClass?.name
-                                    val parentNameFromText =
-                                        Regex(""":\s*([A-Za-z0-9_.]+)""")
-                                            .find(it.text)
-                                            ?.groupValues
-                                            ?.getOrNull(1)
-                                            ?.substringAfterLast('.')
-                                    "${it.name} extends ${parentNameFromModel ?: parentNameFromText ?: "Any"}"
-                                }
-                            throw AssertionError(
-                                "Custom exception classes should extend RuntimeException or proper Spring exceptions: $violatingClasses",
-                            )
+                val violations =
+                    scope
+                        .notSuppressedClasses(suppressKey)
+                        .filter { it.name.endsWith("Exception") }
+                        .map { it to it.parents(indirectParents = true).map { parent -> parent.name } }
+                        .filterNot { (_, parentNames) ->
+                            parentNames.any { it in validExceptionBases }
                         }
-                    }
+
+                if (violations.isNotEmpty()) {
+                    val violatingClasses =
+                        violations.joinToString(", ") { (klass, parentName) ->
+                            "${klass.name} extends $parentName"
+                        }
+                    throw AssertionError(
+                        "Custom exception classes should extend RuntimeException or proper Spring exceptions: $violatingClasses",
+                    )
+                }
             }
         }
 
@@ -164,7 +149,7 @@ object CoreRules {
 
                             throw AssertionError(
                                 "Found ${properties.size} field(s) with @Autowired/@Inject in: $violatingClasses. " +
-                                    "Use constructor injection instead.",
+                                        "Use constructor injection instead.",
                             )
                         }
                     }
@@ -187,8 +172,8 @@ object CoreRules {
                         val annotationName = annotation.substringAfterLast(".")
                         throw AssertionError(
                             "${function.containingDeclaration}.${function.name} is private and " +
-                                "annotated with @$annotationName — Spring proxy cannot intercept private methods, " +
-                                "the annotation will be silently ignored.",
+                                    "annotated with @$annotationName — Spring proxy cannot intercept private methods, " +
+                                    "the annotation will be silently ignored.",
                         )
                     }
             }
@@ -213,7 +198,7 @@ object CoreRules {
                                     val methodNames = violations.joinToString(", ") { it.name }
                                     throw AssertionError(
                                         "${klass.name} uses println/print in method(s): $methodNames. " +
-                                            "Use proper logging (SLF4J) instead of console output.",
+                                                "Use proper logging (SLF4J) instead of console output.",
                                     )
                                 }
                             }
@@ -240,7 +225,7 @@ object CoreRules {
                                     val methodNames = violations.joinToString(", ") { it.name }
                                     throw AssertionError(
                                         "${klass.name} prints stack traces in method(s): $methodNames. " +
-                                            "Use proper logging instead of printStackTrace().",
+                                                "Use proper logging instead of printStackTrace().",
                                     )
                                 }
                             }
