@@ -10,6 +10,8 @@ import dev.protsenko.codeguard.rules.naming.NamingRuleContext
 import dev.protsenko.codeguard.rules.naming.allNamingRules
 import dev.protsenko.codeguard.rules.packages.PackageRuleContext
 import dev.protsenko.codeguard.rules.packages.allPackageRules
+import dev.protsenko.codeguard.rules.proxy.ProxyRuleContext
+import dev.protsenko.codeguard.rules.proxy.allProxyRules
 import dev.protsenko.codeguard.rules.web.WebRuleContext
 import dev.protsenko.codeguard.rules.web.allWebRules
 
@@ -72,6 +74,15 @@ class SpringBootRulesConfiguration {
     }
 
     /**
+     * Configure Spring proxy rules (@Transactional, caching, async interception).
+     */
+    fun proxy(block: ProxyRuleContext.() -> Unit) {
+        val context = ProxyRuleContext()
+        context.block()
+        allRules.addAll(context.getRules())
+    }
+
+    /**
      * Exclude rules by suppress key. Order-independent — exclusions are applied at verify() time.
      * Throws if a key does not match any registered rule, or if all rules are excluded.
      */
@@ -79,27 +90,21 @@ class SpringBootRulesConfiguration {
         excludedKeys.addAll(keys)
     }
 
-    private fun activeRules(): List<SpringBootRule> {
-        if (excludedKeys.isEmpty()) return allRules.toList()
-
-        val registeredKeys = allRules.map { it.suppressKey }
-        val unknownKeys = excludedKeys.filter { it !in registeredKeys }
-        if (unknownKeys.isNotEmpty()) {
-            throw IllegalArgumentException(
+    private val activeRules: List<SpringBootRule>
+        get() {
+            if (excludedKeys.isEmpty()) return allRules.toList()
+            val registeredKeys = allRules.map { it.suppressKey }
+            val unknownKeys = excludedKeys.filter { it !in registeredKeys }
+            require(unknownKeys.isEmpty()) {
                 "Cannot exclude unknown rule(s): ${unknownKeys.joinToString(", ")}. " +
-                    "Registered rules: ${registeredKeys.joinToString(", ")}",
-            )
+                    "Registered rules: ${registeredKeys.joinToString(", ")}"
+            }
+            val active = allRules.filterNot { it.suppressKey in excludedKeys }
+            require(active.isNotEmpty()) {
+                "No rules remaining after exclusions — at least one rule must be active."
+            }
+            return active
         }
-
-        val active = allRules.filterNot { it.suppressKey in excludedKeys }
-        if (active.isEmpty()) {
-            throw IllegalArgumentException(
-                "No rules remaining after exclusions — at least one rule must be active.",
-            )
-        }
-
-        return active
-    }
 
     /**
      * Verify all configured rules against the scope.
@@ -107,7 +112,7 @@ class SpringBootRulesConfiguration {
      * so the full list of problems is reported in a single error.
      */
     fun verify() {
-        val failures = activeRules().mapNotNull { rule ->
+        val failures = activeRules.mapNotNull { rule ->
             try {
                 rule.verify(scope)
                 null
@@ -124,7 +129,7 @@ class SpringBootRulesConfiguration {
      * Verify configured rules and collect per-rule results without throwing.
      */
     fun verifyWithResults(): List<RuleResult> =
-        activeRules().map { rule ->
+        activeRules.map { rule ->
             try {
                 rule.verify(scope)
                 RuleResult.Success
@@ -145,6 +150,7 @@ class SpringBootRulesConfiguration {
         allRules.addAll(allJpaRules)
         allRules.addAll(allNamingRules)
         allRules.addAll(allPackageRules)
+        allRules.addAll(allProxyRules)
         allRules.addAll(allWebRules)
     }
 

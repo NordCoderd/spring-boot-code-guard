@@ -72,14 +72,16 @@ class PackageRuleContext : RuleContext() {
     }
 
     /**
-     * Enforce that only @Controller/@RestController classes (or their file-level helpers) reside in .controller or .web package.
+     * Enforce that only @Controller/@RestController classes (or their file-level helpers)
+     * reside in .controller or .web package.
      */
     fun onlyControllersInControllerPackage() {
         builder.addRule(PackageRules.onlyControllersInControllerPackageRule)
     }
 
     /**
-     * Enforce that only @Configuration classes (or their file-level helpers) reside in .config or .configuration package.
+     * Enforce that only @Configuration classes (or their file-level helpers)
+     * reside in .config or .configuration package.
      */
     fun onlyConfigurationsInConfigPackage() {
         builder.addRule(PackageRules.onlyConfigurationsInConfigPackageRule)

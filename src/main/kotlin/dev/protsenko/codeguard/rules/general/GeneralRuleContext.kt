@@ -58,4 +58,5 @@ class GeneralRuleContext : RuleContext() {
     fun noProxyAnnotationsOnPrivateMethods() {
         builder.addRule(CoreRules.noProxyAnnotationsOnPrivateMethodsRule)
     }
+
 }

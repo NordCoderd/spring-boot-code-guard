@@ -120,7 +120,8 @@ object CoreRules {
                             "${klass.name} extends $parentName"
                         }
                     throw AssertionError(
-                        "Custom exception classes should extend RuntimeException or proper Spring exceptions: $violatingClasses",
+                        "Custom exception classes should extend RuntimeException or proper Spring " +
+                            "exceptions: $violatingClasses",
                     )
                 }
             }
@@ -166,15 +167,16 @@ object CoreRules {
                     .notSuppressedFunctions(suppressKey)
                     .filter { it.hasModifier(KoModifier.PRIVATE) }
                     .forEach { function ->
-                        val annotation = SpringAnnotations.proxyAnnotations
+                        SpringAnnotations.proxyAnnotations
                             .firstOrNull { function.hasAnnotationWithName(it) }
-                            ?: return@forEach
-                        val annotationName = annotation.substringAfterLast(".")
-                        throw AssertionError(
-                            "${function.containingDeclaration}.${function.name} is private and " +
-                                    "annotated with @$annotationName — Spring proxy cannot intercept private methods, " +
-                                    "the annotation will be silently ignored.",
-                        )
+                            ?.let { annotation ->
+                                val annotationName = annotation.substringAfterLast(".")
+                                throw AssertionError(
+                                    "${function.containingDeclaration}.${function.name} is private and " +
+                                        "annotated with @$annotationName — Spring proxy cannot intercept " +
+                                        "private methods, the annotation will be silently ignored.",
+                                )
+                            }
                     }
             }
         }

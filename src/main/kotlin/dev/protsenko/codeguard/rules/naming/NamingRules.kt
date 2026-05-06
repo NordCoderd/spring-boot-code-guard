@@ -106,7 +106,8 @@ object NamingRules {
                         if (violations.isNotEmpty()) {
                             val violatingClasses = violations.joinToString(", ") { it.name }
                             throw AssertionError(
-                                "Exception handler classes should end with 'ExceptionHandler' or 'Advice': $violatingClasses",
+                                "Exception handler classes should end with " +
+                                    "'ExceptionHandler' or 'Advice': $violatingClasses",
                             )
                         }
                     }
@@ -130,7 +131,8 @@ object NamingRules {
                         if (violations.isNotEmpty()) {
                             val violatingClasses = violations.joinToString(", ") { it.name }
                             throw AssertionError(
-                                "Classes with @ConfigurationProperties annotation should end with 'Properties': $violatingClasses",
+                                "Classes with @ConfigurationProperties annotation " +
+                                    "should end with 'Properties': $violatingClasses",
                             )
                         }
                     }

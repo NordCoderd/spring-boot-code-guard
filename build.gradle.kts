@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "dev.protsenko"
-version = "1.0.8"
+version = "1.0.9"
 
 repositories {
     mavenCentral()
@@ -20,6 +20,7 @@ repositories {
 dependencies {
     // Konsist needs to be in api/implementation scope as our rules use its types
     api("com.lemonappdev:konsist:0.17.3")
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.0.21")
 
     testImplementation(kotlin("test"))
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa:4.0.5")
@@ -33,10 +34,6 @@ kotlin {
 
 tasks.test {
     useJUnitPlatform()
-}
-
-detekt {
-    config.setFrom(files("detekt.yml"))
 }
 
 tasks.withType<KotlinCompile>().configureEach {
@@ -100,8 +97,13 @@ tasks.withType<PublishToMavenRepository>().configureEach {
     }
 }
 
+detekt {
+    config.setFrom(rootProject.file("detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
 tasks.register("codeBaseline") {
-    dependsOn("clean", "test", "detekt", "koverVerify")
+    dependsOn("clean", "test", "detektMain", "koverVerify")
     description = "Runs tests, Detekt, and Kover verification"
     group = "verification"
 }

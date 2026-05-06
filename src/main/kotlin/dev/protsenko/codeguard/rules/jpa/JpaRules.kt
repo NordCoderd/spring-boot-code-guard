@@ -28,23 +28,14 @@ object JpaRules {
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.entityAnnotations)
                     .forEach { entity ->
-                        var current = entity
                         val visitedClassNames = mutableSetOf<String>()
-                        var hasIdField = false
-
-                        while (visitedClassNames.add(current.name)) {
-                            val hasIdInCurrentClass =
-                                current
-                                    .properties()
+                        val hasIdField = generateSequence(entity) { current ->
+                            current.parentClass?.name?.let { classesByName[it] }
+                        }.takeWhile { visitedClassNames.add(it.name) }
+                            .any { klass ->
+                                klass.properties()
                                     .any { it.hasAnnotationWithName(SpringAnnotations.idAnnotations) }
-                            if (hasIdInCurrentClass) {
-                                hasIdField = true
-                                break
                             }
-
-                            val parentName = current.parentClass?.name ?: break
-                            current = classesByName[parentName] ?: break
-                        }
 
                         if (!hasIdField) {
                             throw AssertionError(

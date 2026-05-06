@@ -29,7 +29,7 @@ annotation class SpringBootRuleDsl
  * Context for configuring rules within a specific category.
  */
 @SpringBootRuleDsl
-abstract class RuleContext {
+open class RuleContext {
     protected val builder = RuleBuilder()
 
     /**

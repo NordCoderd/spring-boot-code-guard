@@ -42,6 +42,9 @@ Typical cases to cover per rule:
 - Correct stereotype with file-level helpers in same file → pass
 - Unannotated class alone in constrained location → fail
 
+Strictly use: /test-driven-development skill.
+Warning: RED phase test failing not because compilation error but not expected behavior.
+
 ### 2. Implement the rule
 
 Add the rule `object` to the relevant `*Rules.kt` in `src/main/kotlin/.../rules/<category>/`. Use `hasAnnotationWithName(SpringAnnotations.*)` (not `hasAnnotationOf`). Group by `containingFile` when file-level helper exemptions are needed.
@@ -65,3 +68,4 @@ Add one bullet to the matching section in `README.md` under `## Rule Set`. Forma
 ### 7. Run `./gradlew codeBaseline`
 
 Must pass clean: tests + detekt + 90% coverage floor.
+Strictly denied/prohibited: suppress any violations, removing, excluding tests, disabling any quality gates.

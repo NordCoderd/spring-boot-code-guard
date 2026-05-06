@@ -6,6 +6,7 @@ import dev.protsenko.codeguard.rules.general.allCoreRules
 import dev.protsenko.codeguard.rules.jpa.allJpaRules
 import dev.protsenko.codeguard.rules.naming.allNamingRules
 import dev.protsenko.codeguard.rules.packages.allPackageRules
+import dev.protsenko.codeguard.rules.proxy.allProxyRules
 import dev.protsenko.codeguard.rules.web.allWebRules
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -20,7 +21,7 @@ class AllRulesTest {
                 all()
             }
 
-        val expected = allCoreRules + allJpaRules + allNamingRules + allPackageRules + allWebRules
+        val expected = allCoreRules + allJpaRules + allNamingRules + allPackageRules + allProxyRules + allWebRules
         assertEquals(expected.size, config.getAllRules().size)
         assertTrue(config.getAllRules().containsAll(expected))
     }
@@ -44,6 +45,9 @@ class AllRulesTest {
                     useLoggerNotPrintln()
                     noStackTracePrint()
                     noProxyAnnotationsOnPrivateMethods()
+                }
+                proxy {
+                    noSelfInvocationOfProxyMethods()
                 }
                 jpa {
                     entitiesHaveIdField()
@@ -98,6 +102,11 @@ class AllRulesTest {
     @Test
     fun `allCoreRules contains 7 rules`() {
         assertEquals(7, allCoreRules.size)
+    }
+
+    @Test
+    fun `allProxyRules contains 1 rule`() {
+        assertEquals(1, allProxyRules.size)
     }
 
     @Test

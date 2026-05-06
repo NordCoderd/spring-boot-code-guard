@@ -96,28 +96,25 @@ object ResponseHandlingRules {
 
     private fun extractTypeCandidates(typeName: String): LinkedHashSet<String> {
         val normalized = normalizeType(typeName)
-        if (normalized.isEmpty() || normalized == "*") {
-            return linkedSetOf()
-        }
-
         val genericStart = normalized.indexOf('<')
-        if (genericStart < 0 || !normalized.endsWith(">")) {
-            return linkedSetOf(normalized.substringAfterLast("."))
+        return when {
+            normalized.isEmpty() || normalized == "*" -> linkedSetOf()
+            genericStart < 0 || !normalized.endsWith(">") ->
+                linkedSetOf(normalized.substringAfterLast("."))
+            else -> {
+                val rawType = normalized.substringBefore("<").substringAfterLast(".")
+                val inner = normalized.substring(genericStart + 1, normalized.length - 1)
+                val result = linkedSetOf<String>()
+                if (rawType !in genericWrappers) {
+                    result.add(rawType)
+                }
+
+                splitTopLevelTypeArguments(inner).forEach { argument ->
+                    result.addAll(extractTypeCandidates(argument))
+                }
+                result
+            }
         }
-
-        val rawType = normalized.substringBefore("<").substringAfterLast(".")
-        val inner = normalized.substring(genericStart + 1, normalized.length - 1)
-        val result = linkedSetOf<String>()
-
-        if (rawType !in genericWrappers) {
-            result.add(rawType)
-        }
-
-        splitTopLevelTypeArguments(inner).forEach { argument ->
-            result.addAll(extractTypeCandidates(argument))
-        }
-
-        return result
     }
 
     /**

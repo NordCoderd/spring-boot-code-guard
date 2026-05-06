@@ -11,7 +11,7 @@ Maven Central: https://central.sonatype.com/artifact/dev.protsenko/spring-boot-c
 Add dependency to your `build.gradle.kts` or `build.gradle`:
 
 ```kotlin
-implementation("dev.protsenko:spring-boot-code-guard:1.0.8")
+implementation("dev.protsenko:spring-boot-code-guard:1.0.9")
 ```
 
 ## Usage
@@ -125,6 +125,10 @@ Passing an unknown key throws an error listing all registered rule keys. Excludi
 - `CodeGuard:loggerInsteadOfPrint`: Spring bean classes must not call `println` or `print`; use SLF4J or another structured logging framework so output is observable and controllable in production.
 - `CodeGuard:noStackTracePrint`: Spring bean classes must not call `printStackTrace()` directly; use structured logging so stack traces are captured by the application logging pipeline.
 - `CodeGuard:noProxyAnnotationsOnPrivateMethods`: `@Transactional`, `@Cacheable`, `@CacheEvict`, `@CachePut`, and `@Async` must not be placed on `private` methods — Spring proxy cannot intercept private methods, so the annotation is silently ignored.
+
+### Proxy
+
+- `CodeGuard:noSelfInvocationOfProxyMethods`: Methods annotated with `@Transactional`, `@Cacheable`, `@CacheEvict`, `@CachePut`, or `@Async` must not invoke another proxy-annotated method on the same class; Spring AOP proxy is bypassed on self-invocation, so the callee annotation is silently ignored.
 
 ### JPA
 

@@ -62,6 +62,9 @@ class UsageExampleTest {
                 useLoggerNotPrintln()
                 noStackTracePrint()
             }
+            proxy {
+                noSelfInvocationOfProxyMethods()
+            }
             jpa {
                 entitiesHaveIdField()
                 noDataClassEntities()

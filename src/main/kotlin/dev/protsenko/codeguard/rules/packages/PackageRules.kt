@@ -51,6 +51,29 @@ object PackageRules {
         return prefix.takeIf { resolved }
     }
 
+    private fun referencedIdClassTypes(scope: KoScope, suppressKey: String): Set<String> =
+        scope
+            .notSuppressedClasses(suppressKey)
+            .filter { klass ->
+                SpringAnnotations.entityAnnotations.any { annotationName ->
+                    klass.hasAnnotationWithName(annotationName)
+                }
+            }.flatMap { klass ->
+                val importedTypes = klass.containingFile.imports.map { it.name }
+                klass.annotations
+                    .filter { annotation ->
+                        annotation.fullyQualifiedName in SpringAnnotations.idClassAnnotations ||
+                            annotation.name == "IdClass"
+                    }.flatMap { annotation ->
+                        annotation.arguments
+                            .mapNotNull { argument ->
+                                idClassReference(argument.value)
+                            }.flatMap { reference ->
+                                resolvedIdClassReferences(reference, klass.packagee?.name, importedTypes)
+                            }
+                    }
+            }.toSet()
+
     private fun idClassReference(argumentValue: String?): String? =
         argumentValue
             ?.substringBefore("::class")
@@ -178,7 +201,8 @@ object PackageRules {
                                     "${it.name} (${it.packagee?.name ?: "no package"})"
                                 }
                             throw AssertionError(
-                                "@Configuration classes should be in .config or .configuration package: $violatingClasses",
+                                "@Configuration classes should be in .config or " +
+                                    ".configuration package: $violatingClasses",
                             )
                         }
                     }
@@ -229,18 +253,17 @@ object PackageRules {
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.configurationPropertiesAnnotations)
                     .forEach { klass ->
-                        val prefix =
-                            klass.annotations
-                                .firstNotNullOfOrNull { annotation ->
-                                    configurationPropertiesPrefix(annotation, stringConstants)
-                                } ?: return@forEach
-
-                        if (!kebabCasePrefixRegex.matches(prefix)) {
-                            throw AssertionError(
-                                "@ConfigurationProperties prefix should use lowercase kebab-case segments: " +
-                                        "${klass.name} has prefix '$prefix'",
-                            )
-                        }
+                        klass.annotations
+                            .firstNotNullOfOrNull { annotation ->
+                                configurationPropertiesPrefix(annotation, stringConstants)
+                            }?.let { prefix ->
+                                if (!kebabCasePrefixRegex.matches(prefix)) {
+                                    throw AssertionError(
+                                        "@ConfigurationProperties prefix should use lowercase " +
+                                            "kebab-case segments: ${klass.name} has prefix '$prefix'",
+                                    )
+                                }
+                            }
                     }
             }
         }
@@ -385,7 +408,8 @@ object PackageRules {
     val onlyConfigurationsInConfigPackageRule =
         object : SpringBootRule {
             override val description =
-                "Only @Configuration, @ControllerAdvice, or @RestControllerAdvice classes should be in .config or .configuration package"
+                "Only @Configuration, @ControllerAdvice, or @RestControllerAdvice classes " +
+                    "should be in .config or .configuration package"
             override val suppressKey = "CodeGuard:onlyConfigurationsInConfigPackage"
 
             override fun verify(scope: KoScope) {
@@ -409,14 +433,16 @@ object PackageRules {
                             "${it.name} (${it.packagee?.name ?: "no package"})"
                         }
                     throw AssertionError(
-                        "Only @Configuration, @ControllerAdvice, or @RestControllerAdvice classes should be in .config or .configuration package: $violatingClasses",
+                        "Only @Configuration, @ControllerAdvice, or @RestControllerAdvice " +
+                            "classes should be in .config or .configuration package: $violatingClasses",
                     )
                 }
             }
         }
 
     /**
-     * Rule: only @Controller/@RestController classes (or their file-level helpers) should reside in .controller or .web package.
+     * Rule: only @Controller/@RestController classes (or their file-level helpers)
+     * should reside in .controller or .web package.
      */
     val onlyControllersInControllerPackageRule =
         object : SpringBootRule {
@@ -459,29 +485,7 @@ object PackageRules {
             override val suppressKey = "CodeGuard:onlyEntitiesInEntityPackage"
 
             override fun verify(scope: KoScope) {
-                val referencedIdClassTypes =
-                    scope
-                        .notSuppressedClasses(suppressKey)
-                        .filter { klass ->
-                            SpringAnnotations.entityAnnotations.any { annotationName ->
-                                klass.hasAnnotationWithName(annotationName)
-                            }
-                        }.flatMap { klass ->
-                            val importedTypes = klass.containingFile.imports.map { it.name }
-
-                            klass.annotations
-                                .filter { annotation ->
-                                    annotation.fullyQualifiedName in SpringAnnotations.idClassAnnotations ||
-                                            annotation.name == "IdClass"
-                                }.flatMap { annotation ->
-                                    annotation.arguments
-                                        .mapNotNull { argument ->
-                                            idClassReference(argument.value)
-                                        }.flatMap { reference ->
-                                            resolvedIdClassReferences(reference, klass.packagee?.name, importedTypes)
-                                        }
-                                }
-                        }.toSet()
+                val referencedIdClassTypes = referencedIdClassTypes(scope, suppressKey)
 
                 val violations =
                     scope
