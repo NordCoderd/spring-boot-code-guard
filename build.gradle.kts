@@ -1,6 +1,11 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.SourcesJar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.util.Base64
 
 plugins {
     kotlin("jvm") version "2.3.0"
@@ -8,6 +13,7 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.9.7"
     id("io.gitlab.arturbosch.detekt") version "1.23.8"
     id("com.vanniktech.maven.publish") version "0.36.0"
+    id("org.sonarqube") version "7.3.0.8198"
 }
 
 group = "dev.protsenko"
@@ -18,14 +24,13 @@ repositories {
 }
 
 dependencies {
-    // Konsist needs to be in api/implementation scope as our rules use its types
-    api("com.lemonappdev:konsist:0.17.3")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.0.21")
+    api(libs.konsist)
+    implementation(libs.kotlin.compiler.embeddable)
 
     testImplementation(kotlin("test"))
-    testImplementation("org.springframework.boot:spring-boot-starter-data-jpa:4.0.5")
-    testImplementation("org.springframework.boot:spring-boot-starter-web:4.0.5")
-    testImplementation("org.hibernate.validator:hibernate-validator:9.1.0.Final")
+    testImplementation(libs.spring.boot.starter.data.jpa)
+    testImplementation(libs.spring.boot.starter.web)
+    testImplementation(libs.hibernate.validator)
 }
 
 kotlin {
@@ -102,8 +107,75 @@ detekt {
     buildUponDefaultConfig = true
 }
 
+sonar {
+    properties {
+        property("sonar.projectKey", "NordCoderd_spring-boot-code-guard")
+        property("sonar.organization", "nordcoderd")
+        property("sonar.qualitygate.wait", "true")
+        property("sonar.qualitygate.timeout", "300")
+        property("sonar.coverage.exclusions", "*.gradle.kts,build.gradle.kts")
+    }
+}
+
+val sonarProjectKey = "NordCoderd_spring-boot-code-guard"
+val sonarHost = "https://sonarcloud.io"
+
+tasks.register("sonarReport") {
+    description = "Fetch Quality Gate status and open issues from SonarCloud."
+    group = "verification"
+    doLast {
+        val token = System.getenv("SONAR_TOKEN")
+        if (token.isNullOrBlank()) {
+            logger.warn("SONAR_TOKEN not set; skipping issue fetch")
+            return@doLast
+        }
+        val auth = Base64.getEncoder()
+            .encodeToString("$token:".toByteArray())
+        val client = HttpClient.newHttpClient()
+
+        fun get(url: String): String {
+            val req = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Basic $auth")
+                .GET()
+                .build()
+            return client.send(req, HttpResponse.BodyHandlers.ofString()).body()
+        }
+
+        logger.lifecycle("\n=== Quality Gate ===")
+        logger.lifecycle(get("$sonarHost/api/qualitygates/project_status?projectKey=$sonarProjectKey"))
+
+        logger.lifecycle("\n=== Issues (open) ===")
+        var page = 1
+        val pageSize = 500
+        val regex = Regex(
+            "\"rule\":\"([^\"]+)\".*?\"severity\":\"([^\"]+)\".*?" +
+                "\"component\":\"([^\"]+)\"(?:.*?\"line\":(\\d+))?.*?\"message\":\"([^\"]+)\""
+        )
+        while (true) {
+            val body = get(
+                "$sonarHost/api/issues/search" +
+                    "?componentKeys=$sonarProjectKey&resolved=false&ps=$pageSize&p=$page"
+            )
+            val matches = regex.findAll(body).toList()
+            if (matches.isEmpty()) break
+            matches.forEach { m ->
+                val (rule, sev, comp, line, msg) = m.destructured
+                logger.lifecycle("[$sev] $comp:${line.ifBlank { "?" }} $rule — $msg")
+            }
+            if (matches.size < pageSize) break
+            page++
+            if (page * pageSize > 10_000) break
+        }
+    }
+}
+
+tasks.named("sonar") {
+    finalizedBy("sonarReport")
+}
+
 tasks.register("codeBaseline") {
-    dependsOn("clean", "test", "detektMain", "koverVerify")
+    dependsOn("clean", "test", "detektMain", "koverVerify", "koverXmlReport")
     description = "Runs tests, Detekt, and Kover verification"
     group = "verification"
 }

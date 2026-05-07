@@ -772,6 +772,48 @@ class PackageRulesViolationTest {
     }
 
     @Test
+    fun `servicePackageRule shows 'no package' for class without package declaration`() {
+        val scope = Konsist.scopeFromFiles(listOf("src/test/kotlin/fixtures/nopackage/ServiceNoPackage.kt"))
+        val error = assertFailsWith<AssertionError> { PackageRules.servicePackageRule.verify(scope) }
+        assertEquals("@Service classes should be in .service package: ServiceNoPackage (no package)", error.message)
+    }
+
+    @Test
+    fun `controllerPackageRule shows 'no package' for class without package declaration`() {
+        val scope = Konsist.scopeFromFiles(listOf("src/test/kotlin/fixtures/nopackage/ControllerNoPackage.kt"))
+        val error = assertFailsWith<AssertionError> { PackageRules.controllerPackageRule.verify(scope) }
+        assertEquals("Controllers should be in .controller or .web package: ControllerNoPackage (no package)", error.message)
+    }
+
+    @Test
+    fun `configurationPackageRule shows 'no package' for class without package declaration`() {
+        val scope = Konsist.scopeFromFiles(listOf("src/test/kotlin/fixtures/nopackage/ConfigurationNoPackage.kt"))
+        val error = assertFailsWith<AssertionError> { PackageRules.configurationPackageRule.verify(scope) }
+        assertEquals("@Configuration classes should be in .config or .configuration package: ConfigurationNoPackage (no package)", error.message)
+    }
+
+    @Test
+    fun `configurationPropertiesPackageRule shows 'no package' for class without package declaration`() {
+        val scope = Konsist.scopeFromFiles(listOf("src/test/kotlin/fixtures/nopackage/ConfigurationPropertiesNoPackage.kt"))
+        val error = assertFailsWith<AssertionError> { PackageRules.propertiesValidationRule.verify(scope) }
+        assertEquals("@ConfigurationProperties classes should be in .property package: ConfigurationPropertiesNoPackage (no package)", error.message)
+    }
+
+    @Test
+    fun `repositoryPackageRule shows 'no package' for class without package declaration`() {
+        val scope = Konsist.scopeFromFiles(listOf("src/test/kotlin/fixtures/nopackage/RepositoryNoPackage.kt"))
+        val error = assertFailsWith<AssertionError> { PackageRules.repositoryPackageRule.verify(scope) }
+        assertEquals("Repository classes should be in .repository package: RepositoryNoPackage (no package)", error.message)
+    }
+
+    @Test
+    fun `entityPackageRule shows 'no package' for class without package declaration`() {
+        val scope = Konsist.scopeFromFiles(listOf("src/test/kotlin/fixtures/nopackage/EntityNoPackage.kt"))
+        val error = assertFailsWith<AssertionError> { PackageRules.entityPackageRule.verify(scope) }
+        assertEquals("@Entity classes should be in .domain or .entity package: EntityNoPackage (no package)", error.message)
+    }
+
+    @Test
     fun `onlyConfigurationsInConfigPackageRule detects @ConfigurationProperties-only class in config package`() {
         val negativeScope =
             Konsist.scopeFromFiles(

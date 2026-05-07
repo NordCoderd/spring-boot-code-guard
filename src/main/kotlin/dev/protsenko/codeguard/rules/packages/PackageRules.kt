@@ -2,6 +2,7 @@ package dev.protsenko.codeguard.rules.packages
 
 import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.declaration.KoAnnotationDeclaration
+import com.lemonappdev.konsist.api.declaration.KoPackageDeclaration
 import com.lemonappdev.konsist.api.ext.list.withAnnotationNamed
 import com.lemonappdev.konsist.api.ext.list.withoutAnnotationNamed
 import dev.protsenko.codeguard.core.SpringBootRule
@@ -14,6 +15,10 @@ import dev.protsenko.codeguard.rules.isSpringDataRepository
  * Rules for package structure and naming conventions.
  */
 object PackageRules {
+    private const val NO_PACKAGE = "no package"
+
+    private fun KoPackageDeclaration?.displayName(): String = this?.name ?: NO_PACKAGE
+
     private val kebabCasePrefixRegex =
         Regex("""^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$""")
     private val constReferenceRegex = Regex("""\$\{?([A-Za-z_][A-Za-z0-9_]*)}?""")
@@ -141,7 +146,7 @@ object PackageRules {
                         if (violations.isNotEmpty()) {
                             val violatingClasses =
                                 violations.joinToString(", ") {
-                                    "${it.name} (${it.packagee?.name ?: "no package"})"
+                                    "${it.name} (${it.packagee.displayName()})"
                                 }
                             throw AssertionError(
                                 "@Service classes should be in .service package: $violatingClasses",
@@ -169,7 +174,7 @@ object PackageRules {
                         if (violations.isNotEmpty()) {
                             val violatingClasses =
                                 violations.joinToString(", ") {
-                                    "${it.name} (${it.packagee?.name ?: "no package"})"
+                                    "${it.name} (${it.packagee.displayName()})"
                                 }
                             throw AssertionError(
                                 "Controllers should be in .controller or .web package: $violatingClasses",
@@ -198,7 +203,7 @@ object PackageRules {
                         if (violations.isNotEmpty()) {
                             val violatingClasses =
                                 violations.joinToString(", ") {
-                                    "${it.name} (${it.packagee?.name ?: "no package"})"
+                                    "${it.name} (${it.packagee.displayName()})"
                                 }
                             throw AssertionError(
                                 "@Configuration classes should be in .config or " +
@@ -228,7 +233,7 @@ object PackageRules {
                         if (violations.isNotEmpty()) {
                             val violatingClasses =
                                 violations.joinToString(", ") {
-                                    "${it.name} (${it.packagee?.name ?: "no package"})"
+                                    "${it.name} (${it.packagee.displayName()})"
                                 }
                             throw AssertionError(
                                 "@ConfigurationProperties classes should be in .property package: $violatingClasses",
@@ -298,7 +303,7 @@ object PackageRules {
                 if (violations.isNotEmpty()) {
                     val violatingClasses =
                         violations.joinToString(", ") {
-                            "${it.name} (${it.packagee?.name ?: "no package"})"
+                            "${it.name} (${it.packagee.displayName()})"
                         }
                     throw AssertionError(
                         "Only @Service classes should be in .service package: $violatingClasses",
@@ -324,7 +329,7 @@ object PackageRules {
                         if (violations.isNotEmpty()) {
                             val violatingClasses =
                                 violations.joinToString(", ") {
-                                    "${it.name} (${it.packagee?.name ?: "no package"})"
+                                    "${it.name} (${it.packagee.displayName()})"
                                 }
                             throw AssertionError(
                                 "Repository classes should be in .repository package: $violatingClasses",
@@ -357,7 +362,7 @@ object PackageRules {
                 if (violations.isNotEmpty()) {
                     val violatingClasses =
                         violations.joinToString(", ") {
-                            "${it.name} (${it.packagee?.name ?: "no package"})"
+                            "${it.name} (${it.packagee.displayName()})"
                         }
                     throw AssertionError(
                         "Only @Repository classes should be in .repository package: $violatingClasses",
@@ -392,7 +397,7 @@ object PackageRules {
                 if (violations.isNotEmpty()) {
                     val violatingClasses =
                         violations.joinToString(", ") {
-                            "${it.name} (${it.packagee?.name ?: "no package"})"
+                            "${it.name} (${it.packagee.displayName()})"
                         }
                     throw AssertionError(
                         "Only @ConfigurationProperties classes should be in .property package: $violatingClasses",
@@ -430,7 +435,7 @@ object PackageRules {
                 if (violations.isNotEmpty()) {
                     val violatingClasses =
                         violations.joinToString(", ") {
-                            "${it.name} (${it.packagee?.name ?: "no package"})"
+                            "${it.name} (${it.packagee.displayName()})"
                         }
                     throw AssertionError(
                         "Only @Configuration, @ControllerAdvice, or @RestControllerAdvice " +
@@ -466,7 +471,7 @@ object PackageRules {
                 if (violations.isNotEmpty()) {
                     val violatingClasses =
                         violations.joinToString(", ") {
-                            "${it.name} (${it.packagee?.name ?: "no package"})"
+                            "${it.name} (${it.packagee.displayName()})"
                         }
                     throw AssertionError(
                         "Only @Controller classes should be in .controller or .web package: $violatingClasses",
@@ -533,7 +538,7 @@ object PackageRules {
                 if (violations.isNotEmpty()) {
                     val violatingClasses =
                         violations.joinToString(", ") {
-                            "${it.name} (${it.packagee?.name ?: "no package"})"
+                            "${it.name} (${it.packagee.displayName()})"
                         }
                     throw AssertionError(
                         "Only @Entity classes should be in .domain or .entity package: $violatingClasses",
@@ -560,7 +565,7 @@ object PackageRules {
                         if (violations.isNotEmpty()) {
                             val violatingClasses =
                                 violations.joinToString(", ") {
-                                    "${it.name} (${it.packagee?.name ?: "no package"})"
+                                    "${it.name} (${it.packagee.displayName()})"
                                 }
                             throw AssertionError(
                                 "@Entity classes should be in .domain or .entity package: $violatingClasses",

@@ -136,16 +136,16 @@ object ProxyRules {
         return classes.mapNotNull { klass ->
             val functions = klass.functions()
             val ownMethods = functions.mapNotNull { it.proxyMethod() }
-            val ownProxyNames = ownMethods.mapTo(mutableSetOf()) { it.n }
-            val ownNames = functions.mapTo(mutableSetOf()) { it.name }
+            val ownProxyNames: Set<String> = ownMethods.map { it.n }.toSet()
+            val ownNames: Set<String> = functions.map { it.name }.toSet()
             val inherited =
                 klass.parents(indirectParents = true).mapNotNull { classByName[it.name] }.flatMap { parent ->
                     parent.functions().mapNotNull { it.proxyMethod() }
                 }.filter { it.n !in ownNames || it.n in ownProxyNames }
             val methods = (inherited + ownMethods).groupBy { it.n }.ifEmpty { return@mapNotNull null }
-            val ambiguous = methods.keys.filterTo(mutableSetOf()) { name ->
+            val ambiguous: Set<String> = methods.keys.filter { name ->
                 functions.any { it.name == name && it.proxyMethod() == null }
-            }
+            }.toSet()
             Model(klass.name, klass.text, methods, ownNames, ambiguous)
         }
     }
