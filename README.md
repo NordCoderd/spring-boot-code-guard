@@ -17,6 +17,7 @@ implementation("dev.protsenko:spring-boot-code-guard:1.0.9")
 ## Usage
 
 Add a Konsist test file to your project (e.g. `src/test/kotlin/SpringCodeGuardTest.kt`) and call `springBootRules { }.verify()` inside a JUnit 5 test.
+By default, Code Guard uses Konsist's production scope. In a multi-module build, set `moduleName` to verify one module's production sources.
 
 ### All rules
 
@@ -26,6 +27,32 @@ Enable every available rule with a single call:
 @Test
 fun `spring boot rules`() {
     springBootRules {
+        all()
+    }.verify()
+}
+```
+
+### Multi-module builds
+
+Limit verification to a specific Gradle or Maven module:
+
+```kotlin
+@Test
+fun `spring boot rules`() {
+    springBootRules {
+        moduleName = "module-a"
+        all()
+    }.verify()
+}
+```
+
+For custom scopes, assign `scope` directly with any Konsist scope. A configured `scope` overrides `moduleName`.
+
+```kotlin
+@Test
+fun `spring boot rules`() {
+    springBootRules {
+        scope = Konsist.scopeFromProduction(moduleName = "module-a")
         all()
     }.verify()
 }

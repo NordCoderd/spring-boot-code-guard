@@ -24,10 +24,10 @@ object JpaRules {
                 // so that suppressed base entities remain discoverable for @Id inheritance resolution.
                 val classesByName = scope.classes().associateBy { it.name }
 
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.entityAnnotations)
-                    .forEach { entity ->
+                    .mapNotNull { entity ->
                         val visitedClassNames = mutableSetOf<String>()
                         val hasIdField = generateSequence(entity) { current ->
                             current.parentClass?.name?.let { classesByName[it] }
@@ -36,13 +36,10 @@ object JpaRules {
                                 klass.properties()
                                     .any { it.hasAnnotationWithName(SpringAnnotations.idAnnotations) }
                             }
-
-                        if (!hasIdField) {
-                            throw AssertionError(
-                                "@Entity class ${entity.name} must have a field annotated with @Id",
-                            )
-                        }
+                        if (!hasIdField) "@Entity class ${entity.name} must have a field annotated with @Id"
+                        else null
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 
@@ -85,32 +82,25 @@ object JpaRules {
             override val suppressKey = "CodeGuard:transactionalPlacement"
 
             override fun verify(scope: KoScope) {
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.controllerAnnotations)
-                    .forEach { controller ->
-                        // Check class-level @Transactional
+                    .mapNotNull { controller ->
                         if (controller.hasAnnotationWithName(SpringAnnotations.transactionalAnnotations)) {
-                            throw AssertionError(
-                                "Controller ${controller.name} has @Transactional annotation. " +
-                                    "Transactions should be managed at the service layer.",
-                            )
+                            "Controller ${controller.name} has @Transactional annotation. " +
+                                "Transactions should be managed at the service layer."
+                        } else {
+                            val transactionalMethods = controller
+                                .functions()
+                                .withAnnotationNamed(SpringAnnotations.transactionalAnnotations)
+                            if (transactionalMethods.isNotEmpty()) {
+                                val methodNames = transactionalMethods.joinToString(", ") { it.name }
+                                "Controller ${controller.name} has @Transactional methods: $methodNames. " +
+                                    "Transactions should be managed at the service layer."
+                            } else null
                         }
-
-                        // Check method-level @Transactional
-                        controller
-                            .functions()
-                            .withAnnotationNamed(SpringAnnotations.transactionalAnnotations)
-                            .also { transactionalMethods ->
-                                if (transactionalMethods.isNotEmpty()) {
-                                    val methodNames = transactionalMethods.joinToString(", ") { it.name }
-                                    throw AssertionError(
-                                        "Controller ${controller.name} has @Transactional methods: $methodNames. " +
-                                            "Transactions should be managed at the service layer.",
-                                    )
-                                }
-                            }
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 
@@ -124,36 +114,28 @@ object JpaRules {
             override val suppressKey = "CodeGuard:domainLayerIndependence"
 
             override fun verify(scope: KoScope) {
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
                     .filter { it.resideInPackage("..domain..") || it.resideInPackage("..entity..") }
-                    .forEach { domainClass ->
-                        // Check for Spring annotations
+                    .mapNotNull { domainClass ->
                         val springAnnotations =
                             domainClass.annotations
                                 .filter { it.fullyQualifiedName?.startsWith("org.springframework.") == true }
-
                         if (springAnnotations.isNotEmpty()) {
                             val annotationNames = springAnnotations.joinToString(", ") { it.name }
-                            throw AssertionError(
-                                "Domain class ${domainClass.name} has Spring annotations: $annotationNames. " +
-                                    "Domain layer should be framework-independent.",
-                            )
+                            "Domain class ${domainClass.name} has Spring annotations: $annotationNames. " +
+                                "Domain layer should be framework-independent."
+                        } else {
+                            val springImports = domainClass.containingFile.imports
+                                .filter { it.name.startsWith("org.springframework.") }
+                            if (springImports.isNotEmpty()) {
+                                val importNames = springImports.joinToString(", ") { it.name }
+                                "Domain class ${domainClass.name} imports Spring classes: $importNames. " +
+                                    "Domain layer should be framework-independent."
+                            } else null
                         }
-
-                        // Check imports
-                        domainClass.containingFile.imports
-                            .filter { it.name.startsWith("org.springframework.") }
-                            .also { springImports ->
-                                if (springImports.isNotEmpty()) {
-                                    val importNames = springImports.joinToString(", ") { it.name }
-                                    throw AssertionError(
-                                        "Domain class ${domainClass.name} imports Spring classes: $importNames. " +
-                                            "Domain layer should be framework-independent.",
-                                    )
-                                }
-                            }
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 }

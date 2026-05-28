@@ -22,11 +22,23 @@ import dev.protsenko.codeguard.rules.web.allWebRules
 class SpringBootRulesConfiguration {
     private val allRules = linkedSetOf<SpringBootRule>()
     private val excludedKeys = mutableSetOf<String>()
+    private var configuredScope: KoScope? = null
 
     /**
-     * The scope to apply rules against. Defaults to the entire project.
+     * Optional module name passed to Konsist.scopeFromProduction(moduleName = ...).
+     * Leave null to keep Konsist's default production scope.
      */
-    var scope: KoScope = Konsist.scopeFromProduction()
+    var moduleName: String? = null
+
+    /**
+     * The scope to apply rules against. Defaults to production sources from Konsist's detected project root,
+     * or from [moduleName] when it is configured.
+     */
+    var scope: KoScope
+        get() = configuredScope ?: Konsist.scopeFromProduction(moduleName = moduleName)
+        set(value) {
+            configuredScope = value
+        }
 
     /**
      * Configure Spring Core rules (DI, components, configuration).
@@ -112,9 +124,10 @@ class SpringBootRulesConfiguration {
      * so the full list of problems is reported in a single error.
      */
     fun verify() {
+        val verificationScope = scope
         val failures = activeRules.mapNotNull { rule ->
             try {
-                rule.verify(scope)
+                rule.verify(verificationScope)
                 null
             } catch (e: AssertionError) {
                 "${rule.suppressKey}: ${e.message}"
@@ -128,10 +141,11 @@ class SpringBootRulesConfiguration {
     /**
      * Verify configured rules and collect per-rule results without throwing.
      */
-    fun verifyWithResults(): List<RuleResult> =
-        activeRules.map { rule ->
+    fun verifyWithResults(): List<RuleResult> {
+        val verificationScope = scope
+        return activeRules.map { rule ->
             try {
-                rule.verify(scope)
+                rule.verify(verificationScope)
                 RuleResult.Success
             } catch (error: AssertionError) {
                 RuleResult.Failure(
@@ -140,6 +154,7 @@ class SpringBootRulesConfiguration {
                 )
             }
         }
+    }
 
     /**
      * Enable every available rule across all categories.

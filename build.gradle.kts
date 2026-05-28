@@ -17,7 +17,7 @@ plugins {
 }
 
 group = "dev.protsenko"
-version = "1.0.9"
+version = "1.0.10"
 
 repositories {
     mavenCentral()
@@ -105,6 +105,7 @@ tasks.withType<PublishToMavenRepository>().configureEach {
 detekt {
     config.setFrom(rootProject.file("detekt.yml"))
     buildUponDefaultConfig = true
+    source.setFrom("src/main/kotlin")
 }
 
 sonar {

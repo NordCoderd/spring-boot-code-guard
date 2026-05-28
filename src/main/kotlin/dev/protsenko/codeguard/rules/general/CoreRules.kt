@@ -30,11 +30,11 @@ object CoreRules {
             override val suppressKey = "CodeGuard:statelessConfiguration"
 
             override fun verify(scope: KoScope) {
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.CONFIGURATION)
                     .filterNot { it.hasAnnotationWithName(SpringAnnotations.CONFIGURATION_PROPERTIES) }
-                    .forEach { klass ->
+                    .mapNotNull { klass ->
                         val mutableProperties =
                             klass
                                 .properties()
@@ -42,15 +42,13 @@ object CoreRules {
                                 .filterNot {
                                     it.hasAnnotationWithName(SpringAnnotations.VALUE)
                                 }
-
                         if (mutableProperties.isNotEmpty()) {
                             val propNames = mutableProperties.joinToString(", ") { it.name }
-                            throw AssertionError(
-                                "${klass.name} has mutable properties: $propNames. " +
-                                        "@Configuration classes should be stateless.",
-                            )
-                        }
+                            "${klass.name} has mutable properties: $propNames. " +
+                                "@Configuration classes should be stateless."
+                        } else null
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 
@@ -70,20 +68,17 @@ object CoreRules {
                         .map { it.name }
                         .toSet()
 
-                scope
+                val failures = scope
                     .notSuppressedFunctions(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.BEAN)
-                    .forEach { function ->
+                    .mapNotNull { function ->
                         val containingClassName = function.containingDeclaration.toString()
-                        val isInConfigClass = configClasses.contains(containingClassName)
-
-                        if (!isInConfigClass) {
-                            val message =
-                                "@Bean method ${function.name} in $containingClassName " +
-                                        "should be in a @Configuration class"
-                            throw AssertionError(message)
-                        }
+                        if (!configClasses.contains(containingClassName)) {
+                            "@Bean method ${function.name} in $containingClassName " +
+                                "should be in a @Configuration class"
+                        } else null
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 
@@ -163,21 +158,20 @@ object CoreRules {
             override val suppressKey = "CodeGuard:noProxyAnnotationsOnPrivateMethods"
 
             override fun verify(scope: KoScope) {
-                scope
+                val failures = scope
                     .notSuppressedFunctions(suppressKey)
                     .filter { it.hasModifier(KoModifier.PRIVATE) }
-                    .forEach { function ->
+                    .mapNotNull { function ->
                         SpringAnnotations.proxyAnnotations
                             .firstOrNull { function.hasAnnotationWithName(it) }
                             ?.let { annotation ->
                                 val annotationName = annotation.substringAfterLast(".")
-                                throw AssertionError(
-                                    "${function.containingDeclaration}.${function.name} is private and " +
-                                        "annotated with @$annotationName — Spring proxy cannot intercept " +
-                                        "private methods, the annotation will be silently ignored.",
-                                )
+                                "${function.containingDeclaration}.${function.name} is private and " +
+                                    "annotated with @$annotationName — Spring proxy cannot intercept " +
+                                    "private methods, the annotation will be silently ignored."
                             }
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 
@@ -187,24 +181,18 @@ object CoreRules {
             override val suppressKey = "CodeGuard:loggerInsteadOfPrint"
 
             override fun verify(scope: KoScope) {
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.springBeanAnnotations)
-                    .forEach { klass ->
-                        klass
-                            .functions()
-                            .filter { function ->
-                                consolePrintRegex.containsMatchIn(function.text)
-                            }.also { violations ->
-                                if (violations.isNotEmpty()) {
-                                    val methodNames = violations.joinToString(", ") { it.name }
-                                    throw AssertionError(
-                                        "${klass.name} uses println/print in method(s): $methodNames. " +
-                                                "Use proper logging (SLF4J) instead of console output.",
-                                    )
-                                }
-                            }
+                    .mapNotNull { klass ->
+                        val violations = klass.functions().filter { consolePrintRegex.containsMatchIn(it.text) }
+                        if (violations.isNotEmpty()) {
+                            val methodNames = violations.joinToString(", ") { it.name }
+                            "${klass.name} uses println/print in method(s): $methodNames. " +
+                                "Use proper logging (SLF4J) instead of console output."
+                        } else null
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 
@@ -214,24 +202,19 @@ object CoreRules {
             override val suppressKey = "CodeGuard:noStackTracePrint"
 
             override fun verify(scope: KoScope) {
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.springBeanAnnotations)
-                    .forEach { klass ->
-                        klass
-                            .functions()
-                            .filter { function ->
-                                stackTracePrintRegex.containsMatchIn(function.text.withoutStringLiterals())
-                            }.also { violations ->
-                                if (violations.isNotEmpty()) {
-                                    val methodNames = violations.joinToString(", ") { it.name }
-                                    throw AssertionError(
-                                        "${klass.name} prints stack traces in method(s): $methodNames. " +
-                                                "Use proper logging instead of printStackTrace().",
-                                    )
-                                }
-                            }
+                    .mapNotNull { klass ->
+                        val violations = klass.functions()
+                            .filter { stackTracePrintRegex.containsMatchIn(it.text.withoutStringLiterals()) }
+                        if (violations.isNotEmpty()) {
+                            val methodNames = violations.joinToString(", ") { it.name }
+                            "${klass.name} prints stack traces in method(s): $methodNames. " +
+                                "Use proper logging instead of printStackTrace()."
+                        } else null
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 }

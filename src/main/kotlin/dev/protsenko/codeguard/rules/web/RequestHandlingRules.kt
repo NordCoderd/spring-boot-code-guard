@@ -52,23 +52,21 @@ object RequestHandlingRules {
                 pathValue.contains("\"/") && pathValue.matches(Regex(".*\"[^\"]+/\".*"))
 
             override fun verify(scope: KoScope) {
-                scope
+                val failures = scope
                     .notSuppressedFunctions(suppressKey)
                     .filter { function ->
                         SpringAnnotations.httpMappingAnnotations.any { function.hasAnnotationWithName(it) }
-                    }.forEach { function ->
+                    }.mapNotNull { function ->
                         val violations =
                             function.annotations
                                 .filter { it.fullyQualifiedName in SpringAnnotations.httpMappingAnnotations }
                                 .filter { hasTrailingSlash(it.text) }
-
                         if (violations.isNotEmpty()) {
-                            throw AssertionError(
-                                "Trailing slash found in ${function.containingDeclaration}" +
-                                    ".${function.name}: paths should not end with '/'",
-                            )
-                        }
+                            "Trailing slash found in ${function.containingDeclaration}" +
+                                ".${function.name}: paths should not end with '/'"
+                        } else null
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 }

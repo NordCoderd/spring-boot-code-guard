@@ -11,8 +11,8 @@ import kotlin.test.assertTrue
  * Demonstrates common usage patterns for Spring Code Guard.
  * These examples are referenced in the README Usage section.
  *
- * In a real Spring Boot project, remove the scope override — the default
- * is Konsist.scopeFromProduction() which scans only main (non-test) source files.
+ * In a real Spring Boot project, remove the fixture scope override.
+ * In a multi-module build, set moduleName to verify one module's production sources.
  */
 class UsageExampleTest {
     // -------------------------------------------------------------------------
@@ -33,7 +33,7 @@ class UsageExampleTest {
 
     @Test
     fun `example - minimal setup enforcing no field injection`() {
-        // In your project: remove the scope line; scopeFromProduction() is the default
+        // In your project: remove the scope line, or set moduleName = "my-module" in a multi-module build
         springBootRules {
             scope =
                 Konsist.scopeFromFiles(
@@ -51,7 +51,7 @@ class UsageExampleTest {
 
     @Test
     fun `example - full Spring Boot project validation`() {
-        // In your project: omit the scope line to scan the whole project
+        // In your project: omit the scope line, or set moduleName = "my-module" in a multi-module build
         springBootRules {
             scope = Konsist.scopeFromFiles(emptyList())
             general {
@@ -166,8 +166,8 @@ class UsageExampleTest {
 
     @Test
     fun `example - verify only a specific module or set of files`() {
-        // Replace scopeFromFiles with Konsist.scopeFromModule("my-module")
-        // to target a specific Gradle or Maven module
+        // In your project: use moduleName = "my-module" to target production sources in one Gradle or Maven module.
+        // Use scope only when you need a custom Konsist scope.
         val result =
             springBootRules {
                 scope =

@@ -134,39 +134,30 @@ object ResponseHandlingRules {
                         .map { it.name }
                         .toSet()
 
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.REST_CONTROLLER)
                     .flatMap { it.functions() }
-                    .forEach { function ->
-                        // Check return type
-                        function.returnType?.let { returnType ->
-                            val returnTypeName =
-                                extractTypeCandidates(returnType.name)
-                                    .firstOrNull { entityClasses.contains(it) }
-
-                            if (returnTypeName != null) {
-                                throw AssertionError(
+                    .flatMap { function ->
+                        val returnViolation = function.returnType?.let { returnType ->
+                            extractTypeCandidates(returnType.name)
+                                .firstOrNull { entityClasses.contains(it) }
+                                ?.let { returnTypeName ->
                                     "Controller method ${function.containingDeclaration}.${function.name} " +
-                                        "returns JPA entity $returnTypeName. Use a DTO instead.",
-                                )
-                            }
+                                        "returns JPA entity $returnTypeName. Use a DTO instead."
+                                }
                         }
-
-                        // Check parameters
-                        function.parameters.forEach { param ->
-                            val paramTypeName =
-                                extractTypeCandidates(param.type.name)
-                                    .firstOrNull { entityClasses.contains(it) }
-
-                            if (paramTypeName != null) {
-                                throw AssertionError(
+                        val paramViolation = function.parameters.firstNotNullOfOrNull { param ->
+                            extractTypeCandidates(param.type.name)
+                                .firstOrNull { entityClasses.contains(it) }
+                                ?.let { paramTypeName ->
                                     "Controller method ${function.containingDeclaration}.${function.name} " +
-                                        "accepts JPA entity $paramTypeName as parameter. Use a DTO instead.",
-                                )
-                            }
+                                        "accepts JPA entity $paramTypeName as parameter. Use a DTO instead."
+                                }
                         }
+                        listOfNotNull(returnViolation, paramViolation)
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 }

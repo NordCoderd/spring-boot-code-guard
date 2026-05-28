@@ -48,3 +48,4 @@ bin/
 .grepai/
 .claude
 konsist-sources/
+codeguard-repro/

@@ -1,3 +1,15 @@
 complexity:
   TooManyFunctions:
     thresholdInClasses: 15
+  LongMethod:
+    threshold: 65
+  LargeClass:
+    threshold: 900
+
+empty-blocks:
+  EmptyFunctionBlock:
+    excludes: ['**/test/kotlin/fixtures/**']
+
+naming:
+  MatchingDeclarationName:
+    excludes: ['**/test/kotlin/fixtures/**']

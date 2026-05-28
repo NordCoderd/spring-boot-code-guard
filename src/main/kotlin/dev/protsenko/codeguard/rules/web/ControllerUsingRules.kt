@@ -33,29 +33,28 @@ object ControllerUsingRules {
                                 .map { it.name }
                     ).toSet()
 
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
-                    .withAnnotationNamed(SpringAnnotations.controllerAnnotations).forEach { controller ->
-                        // Check constructor parameters
-                        controller.primaryConstructor?.parameters?.forEach { param ->
-                            if (repositoryClasses.contains(param.type.name)) {
-                                val message =
-                                    "Controller ${controller.name} directly depends on repository " +
-                                        "${param.type.name}. Controllers should only depend on services."
-                                throw AssertionError(message)
+                    .withAnnotationNamed(SpringAnnotations.controllerAnnotations)
+                    .flatMap { controller ->
+                        val constructorParamNames = controller.primaryConstructor
+                            ?.parameters?.map { it.name }?.toSet() ?: emptySet()
+                        val constructorViolation = controller.primaryConstructor?.parameters
+                            ?.firstOrNull { repositoryClasses.contains(it.type.name) }
+                            ?.let { param ->
+                                "Controller ${controller.name} directly depends on repository " +
+                                    "${param.type.name}. Controllers should only depend on services."
                             }
-                        }
-
-                        // Check properties
-                        controller.properties().forEach { property ->
-                            if (repositoryClasses.contains(property.type?.name)) {
-                                val message =
-                                    "Controller ${controller.name} has repository ${property.type?.name} " +
-                                        "as property. Controllers should only depend on services."
-                                throw AssertionError(message)
+                        val propertyViolation = controller.properties()
+                            .filter { it.name !in constructorParamNames }
+                            .firstOrNull { repositoryClasses.contains(it.type?.name) }
+                            ?.let { property ->
+                                "Controller ${controller.name} has repository ${property.type?.name} " +
+                                    "as property. Controllers should only depend on services."
                             }
-                        }
+                        listOfNotNull(constructorViolation, propertyViolation)
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 }

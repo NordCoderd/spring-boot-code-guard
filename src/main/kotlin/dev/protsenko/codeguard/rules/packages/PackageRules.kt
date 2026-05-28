@@ -26,19 +26,46 @@ object PackageRules {
     private fun configurationPropertiesPrefix(
         annotation: KoAnnotationDeclaration,
         stringConstants: Map<String, String>,
-    ): String? =
-        annotation.arguments
-            .firstOrNull { it.name.isEmpty() || it.name == "prefix" }
-            ?.value
-            ?.let { resolveConstReferences(it, stringConstants) }
+    ): String? {
+        val argument = annotation.arguments
+            .firstOrNull { it.name.isEmpty() || it.name == "prefix" || it.name == "value" }
+        val value = argument?.value
+        // argument.text contains '"' for string literals/templates (KtStringTemplateExpression always has
+        // quotes in raw PSI text); direct const refs (e.g. MY_PREFIX or Obj.MY_PREFIX) have no quotes.
+        return when {
+            argument == null || value == null -> null
+            argument.text.contains('"') -> resolveConstReferences(value, stringConstants)
+            else -> stringConstants[value]
+                ?: if ('.' in value) stringConstants[value.substringAfterLast('.')] else null
+        }
+    }
 
-    private fun stringConstants(scope: KoScope): Map<String, String> =
-        scope
-            .properties(includeNested = false)
-            .filter { it.hasConstModifier }
-            .mapNotNull { property ->
-                property.value?.let { property.name to it }
-            }.toMap()
+    private fun stringConstants(scope: KoScope): Map<String, String> {
+        val raw =
+            scope
+                .properties(includeNested = true)
+                .filter { it.hasConstModifier }
+                .mapNotNull { property ->
+                    property.value?.let { property.name to it }
+                }.toMap()
+        return resolveTransitiveConstants(raw)
+    }
+
+    private fun resolveTransitiveConstants(raw: Map<String, String>): Map<String, String> {
+        val resolved = raw.toMutableMap()
+        var changed = true
+        while (changed) {
+            changed = false
+            for ((key, value) in resolved.toMap()) {
+                val transitive = resolved[value]
+                if (transitive != null && transitive != value) {
+                    resolved[key] = transitive
+                    changed = true
+                }
+            }
+        }
+        return resolved
+    }
 
     private fun resolveConstReferences(
         value: String,
@@ -254,22 +281,21 @@ object PackageRules {
             override fun verify(scope: KoScope) {
                 val stringConstants = stringConstants(scope)
 
-                scope
+                val failures = scope
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.configurationPropertiesAnnotations)
-                    .forEach { klass ->
+                    .mapNotNull { klass ->
                         klass.annotations
                             .firstNotNullOfOrNull { annotation ->
                                 configurationPropertiesPrefix(annotation, stringConstants)
                             }?.let { prefix ->
                                 if (!kebabCasePrefixRegex.matches(prefix)) {
-                                    throw AssertionError(
-                                        "@ConfigurationProperties prefix should use lowercase " +
-                                            "kebab-case segments: ${klass.name} has prefix '$prefix'",
-                                    )
-                                }
+                                    "@ConfigurationProperties prefix should use lowercase " +
+                                        "kebab-case segments: ${klass.name} has prefix '$prefix'"
+                                } else null
                             }
                     }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
 

@@ -48,38 +48,47 @@ object ProxyRules {
         override val description =
             "Proxy-annotated methods must not invoke other proxy-annotated methods of the same class"
         override val suppressKey = "CodeGuard:noSelfInvocationOfProxyMethods"
-        override fun verify(scope: KoScope) = proxyModels(scope).forEach { model ->
-            psiFactory.createFile(model.t).collectDescendantsOfType<KtClassOrObject>()
-                .firstOrNull { it.name == model.n }?.verifyInvocations(model)
+        override fun verify(scope: KoScope) {
+            val failures = proxyModels(scope).flatMap { model ->
+                psiFactory.createFile(model.t).collectDescendantsOfType<KtClassOrObject>()
+                    .firstOrNull { it.name == model.n }?.collectViolations(model) ?: emptyList()
+            }
+            if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
         }
     }
 
-    private fun KtClassOrObject.verifyInvocations(model: Model) {
-        collectDescendantsOfType<KtNamedFunction>().filter { it.name in model.o }.forEach { function ->
-            function.name?.let { name ->
-                val arity = function.valueParameters.size
-                val label = model.m[name]?.firstOrNull { it.a == arity }?.l
-                function.failOn(model, name, arity) { methodMessage(model.n, name, label, it) }
+    private fun KtClassOrObject.collectViolations(model: Model): List<String> {
+        val methodViolations = collectDescendantsOfType<KtNamedFunction>()
+            .filter { it.name in model.o }
+            .mapNotNull { function ->
+                function.name?.let { name ->
+                    val arity = function.valueParameters.size
+                    val label = model.m[name]?.firstOrNull { it.a == arity }?.l
+                    function.firstViolationOf(model, name, arity) { methodMessage(model.n, name, label, it) }
+                }
             }
-        }
         val body = getBody()
-        (collectDescendantsOfType<KtSecondaryConstructor>().map { it.bodyExpression to "constructor" } +
+        val initViolations = (
+            collectDescendantsOfType<KtSecondaryConstructor>().map { it.bodyExpression to "constructor" } +
                 body?.anonymousInitializers.orEmpty().map { it.body to "init block" } +
-                body?.properties.orEmpty()
-                    .map { it.initializer to "property '${it.name}' initializer" }).forEach { (element, source) ->
-            element.failOn(model) {
+                body?.properties.orEmpty().map { it.initializer to "property '${it.name}' initializer" }
+        ).mapNotNull { (element, source) ->
+            element.firstViolationOf(model) {
                 "${model.n} $source invokes ${it.l} method ${it.n} of the same class — Spring AOP " +
-                        "proxy is bypassed during initialization, the annotation will be silently ignored."
+                    "proxy is bypassed during initialization, the annotation will be silently ignored."
             }
         }
+        return methodViolations + initViolations
     }
 
-    private fun PsiElement?.failOn(m: Model, n: String? = null, a: Int? = null, msg: (Method) -> String) =
+    private fun PsiElement?.firstViolationOf(
+        m: Model, n: String? = null, a: Int? = null, msg: (Method) -> String,
+    ): String? =
         this?.let { psi ->
             (psi.collectDescendantsOfType<KtCallExpression>().mapNotNull { toHit(it, m, n, a) } +
                     psi.collectDescendantsOfType<KtCallableReferenceExpression>().mapNotNull { toHit(it, m, n) })
                 .minByOrNull { it.first.textOffset }?.second
-        }?.let { throw AssertionError(msg(it)) }
+        }?.let { msg(it) }
 
     private fun toHit(
         expr: KtCallExpression,

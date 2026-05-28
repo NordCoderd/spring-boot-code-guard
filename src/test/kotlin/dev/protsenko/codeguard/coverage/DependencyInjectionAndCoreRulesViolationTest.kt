@@ -438,6 +438,137 @@ class DependencyInjectionAndCoreRulesViolationTest {
         PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
     }
 
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule passes for direct const val reference with valid kebab-case prefix`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseConstDirectRefPositive.kt",
+                ),
+            )
+        PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule detects violation when direct const val reference resolves to invalid prefix`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseConstDirectRefNegative.kt",
+                ),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(negativeScope)
+            }
+        assertEquals(
+            "@ConfigurationProperties prefix should use lowercase kebab-case segments: " +
+                    "InvalidDirectRefProperties has prefix 'MyApp'",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule skips unresolved direct const val reference`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseUnresolvedConstDirectRefPositive.kt",
+                ),
+            )
+        PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule detects camelCase prefix in named value argument`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseValueArgumentNegative.kt",
+                ),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(negativeScope)
+            }
+        assertEquals(
+            "@ConfigurationProperties prefix should use lowercase kebab-case segments: " +
+                    "ValueArgumentProperties has prefix 'appMail'",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule passes for chained const val reference resolving to valid kebab-case prefix`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseChainedConstPositive.kt",
+                ),
+            )
+        PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule detects violation when chained const val reference resolves to invalid prefix`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseChainedConstNegative.kt",
+                ),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(negativeScope)
+            }
+        assertEquals(
+            "@ConfigurationProperties prefix should use lowercase kebab-case segments: " +
+                    "ChainedInvalidConstProperties has prefix 'MyApp'",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule passes for qualified object const val reference with valid kebab-case prefix`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseObjectConstPositive.kt",
+                ),
+            )
+        PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule detects violation when qualified object const val reference resolves to invalid prefix`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseObjectConstNegative.kt",
+                ),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(negativeScope)
+            }
+        assertEquals(
+            "@ConfigurationProperties prefix should use lowercase kebab-case segments: " +
+                    "InvalidObjectConstProperties has prefix 'MyApp'",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `configurationPropertiesPrefixKebabCaseRule passes for positional direct const val reference with valid kebab-case prefix`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/core/config/ConfigurationPropertiesPrefixKebabCaseConstDirectRefPositionalPositive.kt",
+                ),
+            )
+        PackageRules.configurationPropertiesPrefixKebabCaseRule.verify(positiveScope)
+    }
+
     // ========== configurationPropertiesNamingRule ==========
 
     @Test
