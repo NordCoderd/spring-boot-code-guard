@@ -3,6 +3,7 @@ package dev.protsenko.codeguard.rules.web
 import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.ext.list.withAnnotationNamed
 import dev.protsenko.codeguard.core.SpringBootRule
+import dev.protsenko.codeguard.core.extractTypeCandidates
 import dev.protsenko.codeguard.core.notSuppressedClasses
 import dev.protsenko.codeguard.rules.SpringAnnotations
 
@@ -38,84 +39,6 @@ object ResponseHandlingRules {
                     }
             }
         }
-
-    private val genericWrappers =
-        setOf(
-            "ResponseEntity",
-            "List",
-            "MutableList",
-            "Set",
-            "MutableSet",
-            "Collection",
-            "Iterable",
-            "Page",
-        )
-
-    private fun normalizeType(typeName: String): String =
-        typeName
-            .trim()
-            .removeSuffix("?")
-            .removePrefix("out ")
-            .removePrefix("in ")
-
-    private fun splitTopLevelTypeArguments(arguments: String): List<String> {
-        val result = mutableListOf<String>()
-        val current = StringBuilder()
-        var depth = 0
-
-        arguments.forEach { char ->
-            when (char) {
-                '<' -> {
-                    depth++
-                    current.append(char)
-                }
-
-                '>' -> {
-                    depth--
-                    current.append(char)
-                }
-
-                ',' if depth == 0 -> {
-                    result.add(current.toString().trim())
-                    current.clear()
-                }
-
-                else -> {
-                    current.append(char)
-                }
-            }
-        }
-
-        val tail = current.toString().trim()
-        if (tail.isNotEmpty()) {
-            result.add(tail)
-        }
-
-        return result
-    }
-
-    private fun extractTypeCandidates(typeName: String): LinkedHashSet<String> {
-        val normalized = normalizeType(typeName)
-        val genericStart = normalized.indexOf('<')
-        return when {
-            normalized.isEmpty() || normalized == "*" -> linkedSetOf()
-            genericStart < 0 || !normalized.endsWith(">") ->
-                linkedSetOf(normalized.substringAfterLast("."))
-            else -> {
-                val rawType = normalized.substringBefore("<").substringAfterLast(".")
-                val inner = normalized.substring(genericStart + 1, normalized.length - 1)
-                val result = linkedSetOf<String>()
-                if (rawType !in genericWrappers) {
-                    result.add(rawType)
-                }
-
-                splitTopLevelTypeArguments(inner).forEach { argument ->
-                    result.addAll(extractTypeCandidates(argument))
-                }
-                result
-            }
-        }
-    }
 
     /**
      * Rule: DTOs should be separate from JPA entities.

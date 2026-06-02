@@ -54,6 +54,7 @@ class AllRulesTest {
                     noDataClassEntities()
                     transactionalOnServiceLayer()
                     domainLayerNoDependencies()
+                    repositoriesDoNotReturnRawObjectTypes()
                 }
                 naming {
                     serviceNamingConvention()
@@ -84,6 +85,8 @@ class AllRulesTest {
                     noTrailingSlashesInPaths()
                     separateDtosFromEntities()
                     controllersDoNotAccessRepositories()
+                    servicesDoNotDependOnWebLayer()
+                    servicesDoNotReturnEntities()
                 }
             }
 
@@ -110,8 +113,8 @@ class AllRulesTest {
     }
 
     @Test
-    fun `allJpaRules contains 4 rules`() {
-        assertEquals(4, allJpaRules.size)
+    fun `allJpaRules contains 5 rules`() {
+        assertEquals(5, allJpaRules.size)
     }
 
     @Test
@@ -125,7 +128,7 @@ class AllRulesTest {
     }
 
     @Test
-    fun `allWebRules contains 5 rules`() {
-        assertEquals(5, allWebRules.size)
+    fun `allWebRules contains 7 rules`() {
+        assertEquals(7, allWebRules.size)
     }
 }

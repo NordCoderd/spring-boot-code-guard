@@ -11,6 +11,8 @@ val allWebRules: List<SpringBootRule> =
         RequestHandlingRules.noTrailingSlashRule,
         ResponseHandlingRules.dtoSeparationRule,
         ControllerUsingRules.controllerRepositoryRule,
+        ServiceUsingRules.serviceWebIndependenceRule,
+        ServiceUsingRules.serviceEntityReturnRule,
     )
 
 /**
@@ -51,5 +53,19 @@ class WebRuleContext : RuleContext() {
      */
     fun controllersDoNotAccessRepositories() {
         builder.addRule(ControllerUsingRules.controllerRepositoryRule)
+    }
+
+    /**
+     * Enforce that services don't depend on the web layer.
+     */
+    fun servicesDoNotDependOnWebLayer() {
+        builder.addRule(ServiceUsingRules.serviceWebIndependenceRule)
+    }
+
+    /**
+     * Enforce that services don't return JPA entities.
+     */
+    fun servicesDoNotReturnEntities() {
+        builder.addRule(ServiceUsingRules.serviceEntityReturnRule)
     }
 }

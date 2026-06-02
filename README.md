@@ -163,6 +163,7 @@ Passing an unknown key throws an error listing all registered rule keys. Excludi
 - `CodeGuard:noDataClassEntity`: `@Entity` classes must not be Kotlin `data class` types — the `final` modifier prevents JPA lazy-loading proxies, and structural `equals`/`hashCode` breaks entity identity semantics.
 - `CodeGuard:transactionalPlacement`: `@Transactional` must not appear on `@Controller` or `@RestController` classes or their methods; transaction boundaries belong in the service layer.
 - `CodeGuard:domainLayerIndependence`: Classes residing in `..domain..` or `..entity..` packages must not import or use any `org.springframework.*` types, keeping the domain model framework-agnostic and portable.
+- `CodeGuard:repositoryReturnType`: Public declared methods of Spring Data repositories (`@Repository` classes and `JpaRepository`/`CrudRepository`/etc. interfaces) must not return raw `Object`/`Any`, including as a collection element (`List<Any>`, `Optional<Any>`, `Page<Any>`); return concrete types instead. `Map<String, Any>` and other multi-arg generics are allowed. Exception: per-class `@Suppress("CodeGuard:repositoryReturnType")`.
 
 ### Naming
 
@@ -196,3 +197,5 @@ Passing an unknown key throws an error listing all registered rule keys. Excludi
 - `CodeGuard:restControllerReturnType`: GET handler methods in `@RestController` classes must not return `Unit`/`void`; every GET endpoint must produce a meaningful response body.
 - `CodeGuard:dtoSeparation`: `@RestController` methods must not accept or return `@Entity` classes directly — use dedicated DTOs to decouple the API contract from the persistence model.
 - `CodeGuard:controllerRepository`: `@Controller` and `@RestController` classes must not declare repository types as constructor parameters or properties; controllers should depend only on services, leaving data access to the service layer.
+- `CodeGuard:serviceWebDependency`: `@Service` classes must not import web-layer types — Spring Web (`org.springframework.web.*`), Spring HTTP (`org.springframework.http.*`), the Servlet API (`jakarta.servlet.*`/`javax.servlet.*`), or in-project `@Controller`/`@RestController` classes — keeping the service layer free of inbound-web coupling. Exception: per-class `@Suppress("CodeGuard:serviceWebDependency")`.
+- `CodeGuard:serviceEntityReturn`: Public methods of `@Service` classes must not return JPA `@Entity` types (including when wrapped in `List`/`Optional`/`Page`/etc.); return DTOs so the persistence model does not leak across the service boundary. Exception: per-class `@Suppress("CodeGuard:serviceEntityReturn")`.

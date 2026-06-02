@@ -4,8 +4,11 @@ import com.lemonappdev.konsist.api.KoModifier
 import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.ext.list.withAnnotationNamed
 import dev.protsenko.codeguard.core.SpringBootRule
+import dev.protsenko.codeguard.core.isObjectOrAnyType
 import dev.protsenko.codeguard.core.notSuppressedClasses
+import dev.protsenko.codeguard.core.notSuppressedClassesAndInterfaces
 import dev.protsenko.codeguard.rules.SpringAnnotations
+import dev.protsenko.codeguard.rules.isSpringDataRepository
 
 /**
  * Rules for JPA entities and transaction management.
@@ -138,6 +141,31 @@ object JpaRules {
                 if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
             }
         }
+
+    /**
+     * Rule: Spring Data repositories should not return raw Object/Any.
+     */
+    val repositoryReturnTypeRule =
+        object : SpringBootRule {
+            override val description = "Repositories should not return Object or Any"
+            override val suppressKey = "CodeGuard:repositoryReturnType"
+
+            override fun verify(scope: KoScope) {
+                val failures =
+                    scope
+                        .notSuppressedClassesAndInterfaces(suppressKey)
+                        .filter { it.isSpringDataRepository() }
+                        .flatMap { it.functions() }
+                        .filter { it.hasPublicOrDefaultModifier }
+                        .mapNotNull { function ->
+                            function.returnType?.name?.takeIf { isObjectOrAnyType(it) }?.let { typeName ->
+                                "Repository method ${function.containingDeclaration}.${function.name} " +
+                                    "returns $typeName. Use a concrete return type instead."
+                            }
+                        }
+                if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))
+            }
+        }
 }
 
 val allJpaRules: List<SpringBootRule> = listOf(
@@ -145,4 +173,5 @@ val allJpaRules: List<SpringBootRule> = listOf(
     JpaRules.noDataClassEntityRule,
     JpaRules.transactionalPlacementRule,
     JpaRules.domainLayerIndependenceRule,
+    JpaRules.repositoryReturnTypeRule,
 )

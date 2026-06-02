@@ -139,4 +139,113 @@ class JpaRulesViolationTest {
             )
         NamingRules.repositoryNamingRule.verify(positiveScope)
     }
+
+    // ========== repositoryReturnTypeRule Tests ==========
+
+    @Test
+    fun `repositoryReturnTypeRule detects repository returning Any`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepositoryReturnsAnyNegative.kt",
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepoSampleDto.kt",
+                ),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                JpaRules.repositoryReturnTypeRule.verify(negativeScope)
+            }
+        assertEquals(
+            "Repository method ThingRepository.findThing returns Any. Use a concrete return type instead.",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `repositoryReturnTypeRule detects repository returning List of Any`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepositoryReturnsListAnyNegative.kt",
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepoSampleDto.kt",
+                ),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                JpaRules.repositoryReturnTypeRule.verify(negativeScope)
+            }
+        assertEquals(
+            "Repository method ThingListRepository.findThings returns List<Any>. Use a concrete return type instead.",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `repositoryReturnTypeRule detects Repository class returning Any`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/jpa/repository/RepositoryClassReturnsAnyNegative.kt"),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                JpaRules.repositoryReturnTypeRule.verify(negativeScope)
+            }
+        assertEquals(
+            "Repository method ManualRepository.load returns Any. Use a concrete return type instead.",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `repositoryReturnTypeRule detects multiple repository violations`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepositoryReturnsAnyMultiNegative.kt",
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepoSampleDto.kt",
+                ),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                JpaRules.repositoryReturnTypeRule.verify(negativeScope)
+            }
+        assertEquals(
+            "Repository method MultiThingRepository.findOne returns Any. Use a concrete return type instead.\n" +
+                "Repository method MultiThingRepository.findMany returns List<Any>. Use a concrete return type instead.",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `repositoryReturnTypeRule passes for repository returning concrete types`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepositoryReturnsConcretePositive.kt",
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepoSampleDto.kt",
+                ),
+            )
+        JpaRules.repositoryReturnTypeRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `repositoryReturnTypeRule passes for repository returning Map`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf(
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepositoryReturnsMapPositive.kt",
+                    "src/test/kotlin/fixtures/violations/jpa/repository/RepoSampleDto.kt",
+                ),
+            )
+        JpaRules.repositoryReturnTypeRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `repositoryReturnTypeRule passes for repository with private method returning Any`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/jpa/repository/RepositoryPrivateAnyPositive.kt"),
+            )
+        JpaRules.repositoryReturnTypeRule.verify(positiveScope)
+    }
 }

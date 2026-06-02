@@ -70,6 +70,7 @@ class UsageExampleTest {
                 noDataClassEntities()
                 transactionalOnServiceLayer()
                 domainLayerNoDependencies()
+                repositoriesDoNotReturnRawObjectTypes()
             }
             naming {
                 serviceNamingConvention()
@@ -100,6 +101,8 @@ class UsageExampleTest {
                 restControllerReturnTypes()
                 separateDtosFromEntities()
                 controllersDoNotAccessRepositories()
+                servicesDoNotDependOnWebLayer()
+                servicesDoNotReturnEntities()
             }
         }.verify()
     }
@@ -197,10 +200,13 @@ class UsageExampleTest {
             jpa {
                 domainLayerNoDependencies()
                 transactionalOnServiceLayer()
+                repositoriesDoNotReturnRawObjectTypes()
             }
             web {
                 controllersDoNotAccessRepositories()
                 separateDtosFromEntities()
+                servicesDoNotDependOnWebLayer()
+                servicesDoNotReturnEntities()
             }
             packages {
                 serviceInServicePackage()

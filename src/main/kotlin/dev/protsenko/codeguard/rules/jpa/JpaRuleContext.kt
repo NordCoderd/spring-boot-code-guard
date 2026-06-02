@@ -35,4 +35,11 @@ class JpaRuleContext : RuleContext() {
     fun domainLayerNoDependencies() {
         builder.addRule(JpaRules.domainLayerIndependenceRule)
     }
+
+    /**
+     * Ensure repositories don't return raw Object/Any types.
+     */
+    fun repositoriesDoNotReturnRawObjectTypes() {
+        builder.addRule(JpaRules.repositoryReturnTypeRule)
+    }
 }
