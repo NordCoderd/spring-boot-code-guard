@@ -11,7 +11,7 @@ Maven Central: https://central.sonatype.com/artifact/dev.protsenko/spring-boot-c
 Add dependency to your `build.gradle.kts` or `build.gradle`:
 
 ```kotlin
-implementation("dev.protsenko:spring-boot-code-guard:1.0.9")
+implementation("dev.protsenko:spring-boot-code-guard:1.0.11")
 ```
 
 ## Usage
