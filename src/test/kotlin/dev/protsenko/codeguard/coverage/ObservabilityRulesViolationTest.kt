@@ -87,4 +87,18 @@ class ObservabilityRulesViolationTest {
             )
         CoreRules.noStackTracePrintRule.verify(positiveScope)
     }
+
+    @Test
+    fun `noStackTracePrintRule scans long string literals without stack overflow`() {
+        val scope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/observability/NoStackTracePrintLongLiteralPositive.kt"),
+            )
+        var failure: Throwable? = null
+        val smallStack = 256L * 1024
+        val worker = Thread(null, { failure = runCatching { CoreRules.noStackTracePrintRule.verify(scope) }.exceptionOrNull() }, "small-stack", smallStack)
+        worker.start()
+        worker.join()
+        assertEquals(null, failure)
+    }
 }

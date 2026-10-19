@@ -15,7 +15,8 @@ import dev.protsenko.codeguard.rules.SpringAnnotations
 object CoreRules {
     private val consolePrintRegex = Regex("""\b(?:println|print)\s*\(""")
     private val stackTracePrintRegex = Regex("""\.\s*printStackTrace\s*\(""")
-    private val stringLiteralRegex = Regex(""""(?:\\.|[^"\\])*"""")
+    // Unrolled form: recurses per escape sequence, not per character, so long literals cannot overflow the stack.
+    private val stringLiteralRegex = Regex(""""[^"\\]*(?:\\.[^"\\]*)*"""")
 
     private fun String.withoutStringLiterals(): String =
         replace(stringLiteralRegex, "\"\"")
