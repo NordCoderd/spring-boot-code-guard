@@ -3,13 +3,10 @@ package dev.protsenko.codeguard.rules.proxy
 import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.declaration.KoFunctionDeclaration
 import dev.protsenko.codeguard.core.SpringBootRule
+import dev.protsenko.codeguard.core.kotlinPsiFactory
 import dev.protsenko.codeguard.core.notSuppressedClasses
 import dev.protsenko.codeguard.rules.SpringAnnotations
-import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -22,7 +19,6 @@ import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtParenthesizedExpression
-import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtQualifiedExpression
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtSuperExpression
@@ -37,20 +33,13 @@ private typealias Methods = Map<String, List<Method>>
 private data class Model(val n: String, val t: String, val m: Methods, val o: Set<String>, val a: Set<String>)
 
 object ProxyRules {
-    private val psiFactory by lazy {
-        val env = KotlinCoreEnvironment.createForProduction(
-            Disposer.newDisposable(), CompilerConfiguration(), EnvironmentConfigFiles.JVM_CONFIG_FILES,
-        )
-        KtPsiFactory(env.project, markGenerated = false)
-    }
-
     val noSelfInvocationOfProxyMethodsRule = object : SpringBootRule {
         override val description =
             "Proxy-annotated methods must not invoke other proxy-annotated methods of the same class"
         override val suppressKey = "CodeGuard:noSelfInvocationOfProxyMethods"
         override fun verify(scope: KoScope) {
             val failures = proxyModels(scope).flatMap { model ->
-                psiFactory.createFile(model.t).collectDescendantsOfType<KtClassOrObject>()
+                kotlinPsiFactory.createFile(model.t).collectDescendantsOfType<KtClassOrObject>()
                     .firstOrNull { it.name == model.n }?.collectViolations(model) ?: emptyList()
             }
             if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))

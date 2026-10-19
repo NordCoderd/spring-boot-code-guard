@@ -2,23 +2,38 @@ package dev.protsenko.codeguard.rules.general
 
 import com.lemonappdev.konsist.api.KoModifier
 import com.lemonappdev.konsist.api.container.KoScope
+import com.lemonappdev.konsist.api.declaration.KoFunctionDeclaration
 import com.lemonappdev.konsist.api.ext.list.withAnnotationNamed
 import dev.protsenko.codeguard.core.SpringBootRule
+import dev.protsenko.codeguard.core.kotlinPsiFactory
 import dev.protsenko.codeguard.core.notSuppressedClasses
 import dev.protsenko.codeguard.core.notSuppressedFunctions
 import dev.protsenko.codeguard.core.notSuppressedProperties
 import dev.protsenko.codeguard.rules.SpringAnnotations
+import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtQualifiedExpression
+import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 
 /**
  * Rules related to Spring @Configuration classes and bean definitions.
  */
 object CoreRules {
-    private val consolePrintRegex = Regex("""\b(?:println|print)\s*\(""")
-    private val stackTracePrintRegex = Regex("""\.\s*printStackTrace\s*\(""")
-    private val stringLiteralRegex = Regex(""""(?:\\.|[^"\\])*"""")
+    private val consolePrintCalls = setOf("println", "print")
 
-    private fun String.withoutStringLiterals(): String =
-        replace(stringLiteralRegex, "\"\"")
+    // Parsing finds real calls only: comments and string contents are never call expressions.
+    private fun KoFunctionDeclaration.calls(predicate: (KtCallExpression) -> Boolean): Boolean =
+        kotlinPsiFactory.createFile(text)
+            .collectDescendantsOfType<KtCallExpression>()
+            .any(predicate)
+
+    private fun KoFunctionDeclaration.callsConsolePrint(): Boolean =
+        calls { it.calleeExpression?.text in consolePrintCalls }
+
+    private fun KoFunctionDeclaration.callsPrintStackTrace(): Boolean =
+        calls { call ->
+            call.calleeExpression?.text == "printStackTrace" &&
+                (call.parent as? KtQualifiedExpression)?.selectorExpression == call
+        }
 
     /**
      * Rule: @Configuration classes should not have mutable state.
@@ -185,7 +200,7 @@ object CoreRules {
                     .notSuppressedClasses(suppressKey)
                     .withAnnotationNamed(SpringAnnotations.springBeanAnnotations)
                     .mapNotNull { klass ->
-                        val violations = klass.functions().filter { consolePrintRegex.containsMatchIn(it.text) }
+                        val violations = klass.functions().filter { it.callsConsolePrint() }
                         if (violations.isNotEmpty()) {
                             val methodNames = violations.joinToString(", ") { it.name }
                             "${klass.name} uses println/print in method(s): $methodNames. " +
@@ -207,7 +222,7 @@ object CoreRules {
                     .withAnnotationNamed(SpringAnnotations.springBeanAnnotations)
                     .mapNotNull { klass ->
                         val violations = klass.functions()
-                            .filter { stackTracePrintRegex.containsMatchIn(it.text.withoutStringLiterals()) }
+                            .filter { it.callsPrintStackTrace() }
                         if (violations.isNotEmpty()) {
                             val methodNames = violations.joinToString(", ") { it.name }
                             "${klass.name} prints stack traces in method(s): $methodNames. " +

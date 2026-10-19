@@ -63,6 +63,31 @@ class ArchitectureRulesViolationTest {
     }
 
     @Test
+    fun `controllerRepositoryRule ignores interfaces that only mention repository types`() {
+        val positiveScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/architecture/layer/ControllerRepositoryMentionPositive.kt"),
+            )
+        ControllerUsingRules.controllerRepositoryRule.verify(positiveScope)
+    }
+
+    @Test
+    fun `controllerRepositoryRule detects Controller depending on Spring Data repository supertype`() {
+        val negativeScope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/architecture/layer/ControllerRepositorySupertypeNegative.kt"),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                ControllerUsingRules.controllerRepositoryRule.verify(negativeScope)
+            }
+        assertEquals(
+            "Controller OrderController directly depends on repository OrderStore. Controllers should only depend on services.",
+            error.message,
+        )
+    }
+
+    @Test
     fun `domainLayerIndependenceRule detects Spring imports in domain`() {
         val negativeScope =
             Konsist.scopeFromFiles(
