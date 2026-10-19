@@ -101,4 +101,30 @@ class ObservabilityRulesViolationTest {
         worker.join()
         assertEquals(null, failure)
     }
+
+    @Test
+    fun `noStackTracePrintRule ignores printStackTrace in comments`() {
+        val scope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/observability/NoStackTracePrintCommentPositive.kt"),
+            )
+        CoreRules.noStackTracePrintRule.verify(scope)
+    }
+
+    @Test
+    fun `noStackTracePrintRule detects printStackTrace inside string template`() {
+        val scope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/observability/NoStackTracePrintTemplateNegative.kt"),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                CoreRules.noStackTracePrintRule.verify(scope)
+            }
+        assertEquals(
+            "TemplateStackTraceService prints stack traces in method(s): describe. " +
+                "Use proper logging instead of printStackTrace().",
+            error.message,
+        )
+    }
 }
