@@ -127,4 +127,30 @@ class ObservabilityRulesViolationTest {
             error.message,
         )
     }
+
+    @Test
+    fun `loggerInsteadOfPrintRule ignores print calls in comments and string literals`() {
+        val scope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/observability/LoggerInsteadOfPrintCommentPositive.kt"),
+            )
+        CoreRules.loggerInsteadOfPrintRule.verify(scope)
+    }
+
+    @Test
+    fun `loggerInsteadOfPrintRule detects println inside string template`() {
+        val scope =
+            Konsist.scopeFromFiles(
+                listOf("src/test/kotlin/fixtures/violations/observability/LoggerInsteadOfPrintTemplateNegative.kt"),
+            )
+        val error =
+            assertFailsWith<AssertionError> {
+                CoreRules.loggerInsteadOfPrintRule.verify(scope)
+            }
+        assertEquals(
+            "TemplatePrintService uses println/print in method(s): describe. " +
+                "Use proper logging (SLF4J) instead of console output.",
+            error.message,
+        )
+    }
 }
