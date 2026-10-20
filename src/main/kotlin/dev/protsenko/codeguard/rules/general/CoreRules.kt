@@ -5,7 +5,7 @@ import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.declaration.KoFunctionDeclaration
 import com.lemonappdev.konsist.api.ext.list.withAnnotationNamed
 import dev.protsenko.codeguard.core.SpringBootRule
-import dev.protsenko.codeguard.core.kotlinPsiFactory
+import dev.protsenko.codeguard.core.parseKotlin
 import dev.protsenko.codeguard.core.notSuppressedClasses
 import dev.protsenko.codeguard.core.notSuppressedFunctions
 import dev.protsenko.codeguard.core.notSuppressedProperties
@@ -21,16 +21,18 @@ object CoreRules {
     private val consolePrintCalls = setOf("println", "print")
 
     // Parsing finds real calls only: comments and string contents are never call expressions.
-    private fun KoFunctionDeclaration.calls(predicate: (KtCallExpression) -> Boolean): Boolean =
-        kotlinPsiFactory.createFile(text)
-            .collectDescendantsOfType<KtCallExpression>()
-            .any(predicate)
+    // The textual pre-check avoids parsing the vast majority of functions that cannot match.
+    private fun KoFunctionDeclaration.calls(needle: String, predicate: (KtCallExpression) -> Boolean): Boolean =
+        text.contains(needle) &&
+            parseKotlin(text)
+                .collectDescendantsOfType<KtCallExpression>()
+                .any(predicate)
 
     private fun KoFunctionDeclaration.callsConsolePrint(): Boolean =
-        calls { it.calleeExpression?.text in consolePrintCalls }
+        calls("print") { it.calleeExpression?.text in consolePrintCalls }
 
     private fun KoFunctionDeclaration.callsPrintStackTrace(): Boolean =
-        calls { call ->
+        calls("printStackTrace") { call ->
             call.calleeExpression?.text == "printStackTrace" &&
                 (call.parent as? KtQualifiedExpression)?.selectorExpression == call
         }
