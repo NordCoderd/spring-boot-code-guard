@@ -124,7 +124,7 @@ class SpringBootRulesConfiguration {
      * so the full list of problems is reported in a single error.
      */
     fun verify() {
-        val verificationScope = scope
+        val verificationScope = scope.memoized()
         val failures = activeRules.mapNotNull { rule ->
             try {
                 rule.verify(verificationScope)
@@ -142,7 +142,7 @@ class SpringBootRulesConfiguration {
      * Verify configured rules and collect per-rule results without throwing.
      */
     fun verifyWithResults(): List<RuleResult> {
-        val verificationScope = scope
+        val verificationScope = scope.memoized()
         return activeRules.map { rule ->
             try {
                 rule.verify(verificationScope)

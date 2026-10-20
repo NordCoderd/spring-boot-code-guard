@@ -3,7 +3,7 @@ package dev.protsenko.codeguard.rules.proxy
 import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.declaration.KoFunctionDeclaration
 import dev.protsenko.codeguard.core.SpringBootRule
-import dev.protsenko.codeguard.core.kotlinPsiFactory
+import dev.protsenko.codeguard.core.parseKotlin
 import dev.protsenko.codeguard.core.notSuppressedClasses
 import dev.protsenko.codeguard.rules.SpringAnnotations
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -32,14 +32,22 @@ private typealias Methods = Map<String, List<Method>>
 
 private data class Model(val n: String, val t: String, val m: Methods, val o: Set<String>, val a: Set<String>)
 
+// Own proxy methods need a second mention (declaration + call/reference); inherited ones are declared elsewhere,
+// so a single mention in this class is already a potential self-invocation.
+private fun Model.mayContainSelfInvocation(): Boolean =
+    m.keys.any { name ->
+        val first = t.indexOf(name)
+        first >= 0 && (name !in o || t.indexOf(name, first + 1) >= 0)
+    }
+
 object ProxyRules {
     val noSelfInvocationOfProxyMethodsRule = object : SpringBootRule {
         override val description =
             "Proxy-annotated methods must not invoke other proxy-annotated methods of the same class"
         override val suppressKey = "CodeGuard:noSelfInvocationOfProxyMethods"
         override fun verify(scope: KoScope) {
-            val failures = proxyModels(scope).flatMap { model ->
-                kotlinPsiFactory.createFile(model.t).collectDescendantsOfType<KtClassOrObject>()
+            val failures = proxyModels(scope).filter { it.mayContainSelfInvocation() }.flatMap { model ->
+                parseKotlin(model.t).collectDescendantsOfType<KtClassOrObject>()
                     .firstOrNull { it.name == model.n }?.collectViolations(model) ?: emptyList()
             }
             if (failures.isNotEmpty()) throw AssertionError(failures.joinToString("\n"))

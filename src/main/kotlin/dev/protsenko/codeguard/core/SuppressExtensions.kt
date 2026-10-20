@@ -10,6 +10,13 @@ private fun suppressedClassNames(
     scope: KoScope,
     suppressKey: String,
 ): Set<String> =
+    if (scope is MemoizedScope) scope.suppressedNames(suppressKey) { computeSuppressedClassNames(scope, suppressKey) }
+    else computeSuppressedClassNames(scope, suppressKey)
+
+private fun computeSuppressedClassNames(
+    scope: KoScope,
+    suppressKey: String,
+): Set<String> =
     scope
         .classes()
         .filter { klass ->
