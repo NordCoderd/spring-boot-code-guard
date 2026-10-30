@@ -17,7 +17,7 @@ plugins {
 }
 
 group = "dev.protsenko"
-version = "1.0.13"
+version = "1.0.14"
 
 repositories {
     mavenCentral()
